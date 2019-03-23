@@ -1,0 +1,58 @@
+﻿<Window x:Class="MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SocketTest"
+        mc:Ignorable="d"
+        Title="Socket" Height="450" Width="800"
+        SizeToContent="WidthAndHeight">
+    <StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="10">
+            <TextBox Name="txtIpAddress">
+                127.0.0.1
+            </TextBox>
+            <TextBlock Text=": "/>
+            <TextBox Name="txtPort">
+                11000
+            </TextBox>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="10">
+            <StackPanel Name="ClientPanel" Margin="10">
+                <TextBlock>
+                    Client
+                </TextBlock>
+                <Button Height="50"
+                        Click="btnClientActivate">
+                    btnClientActivate
+                </Button>
+                <Button Height="50"
+                        Click="btnClientSend">
+                    btnClientSend
+                </Button>
+                <TextBox Name="txtClient">
+                    txtClient
+                </TextBox>
+            </StackPanel>
+            <StackPanel Name="ServerPanel" Margin="10">
+                <TextBlock>
+                    Server
+                </TextBlock>
+                <Button Height="50"
+                        Click="btnServerActivate">
+                    btnServerActivate
+                </Button>
+                <Button Height="50"
+                        Click="btnServerSend">
+                    btnServerSend
+                </Button>
+                <TextBox Name="txtServer">
+                    txtServer
+                </TextBox>
+            </StackPanel>
+        </StackPanel>
+        
+    </StackPanel>
+
+    
+</Window>

@@ -13,9 +13,9 @@ Imports System.Windows
 
 <Assembly: AssemblyTitle("SocketServer")>
 <Assembly: AssemblyDescription("")>
-<Assembly: AssemblyCompany("HP Inc.")>
+<Assembly: AssemblyCompany("")>
 <Assembly: AssemblyProduct("SocketServer")>
-<Assembly: AssemblyCopyright("Copyright © HP Inc. 2019")>
+<Assembly: AssemblyCopyright("")>
 <Assembly: AssemblyTrademark("")>
 <Assembly: ComVisible(false)>
 
