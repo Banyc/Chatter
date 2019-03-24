@@ -24,7 +24,13 @@ Class MainWindow
         End If
     End Sub
 
+    Private Sub DisableTxt()
+        txtIpAddress.IsEnabled = False
+        txtPort.IsEnabled = False
+    End Sub
+
     Private Sub btnServerActivate(sender As Object, e As RoutedEventArgs)
+        DisableTxt()
         If _server Is Nothing Then
             If _client Is Nothing Then
                 _server = New SocketListener(txtIpAddress.Text, Int(txtPort.Text))
@@ -34,6 +40,7 @@ Class MainWindow
     End Sub
 
     Private Sub btnClientActivate(sender As Object, e As RoutedEventArgs)
+        DisableTxt()
         If _client Is Nothing Then
             If _server Is Nothing Then
                 _client = New SocketClient(txtIpAddress.Text, Int(txtPort.Text))
