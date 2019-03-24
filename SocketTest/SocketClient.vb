@@ -25,17 +25,24 @@ Public Class SocketClient
 
     ' Connect to a remote device.  
     Private Function Connect(ipStr As String, port As Integer) As Socket
-        ' Establish the remote endpoint for the socket.  
-        ' This example uses port 11000 on the local computer.  
-        'Dim ipHostInfo As IPHostEntry = Dns.GetHostEntry(Dns.GetHostName())
-        'Dim ipAddress As IPAddress = ipHostInfo.AddressList(0)
-        'Dim remoteEP As New IPEndPoint(ipAddress, 11000)
-        Dim ipAddress As IPAddress = IPAddress.Parse(ipStr)
-        Dim remoteEP As New IPEndPoint(ipAddress, port)
+        Dim sender As Socket
+        Dim remoteEP As IPEndPoint
+        Try
+            ' Establish the remote endpoint for the socket.  
+            ' This example uses port 11000 on the local computer.  
+            'Dim ipHostInfo As IPHostEntry = Dns.GetHostEntry(Dns.GetHostName())
+            'Dim ipAddress As IPAddress = ipHostInfo.AddressList(0)
+            'Dim remoteEP As New IPEndPoint(ipAddress, 11000)
+            Dim ipAddress As IPAddress = IPAddress.Parse(ipStr)
+            remoteEP = New IPEndPoint(ipAddress, port)
 
-        ' Create a TCP/IP socket.  
-        Dim sender As New Socket(ipAddress.AddressFamily,
+            ' Create a TCP/IP socket.  
+            sender = New Socket(ipAddress.AddressFamily,
         SocketType.Stream, ProtocolType.Tcp)
+        Catch ex As Exception
+            MessageBox.Show(ex.ToString(), SocketCS.Client.ToString())
+            Shutdown()
+        End Try
 
         While Not sender.Connected
             Try
@@ -59,4 +66,4 @@ Public Class SocketClient
         End If
     End Sub
 
-End Class 'SynchronousSocketClient
+End Class 'SocketClient
