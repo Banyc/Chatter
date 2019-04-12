@@ -1,0 +1,43 @@
+﻿<UserControl x:Class="CryptoPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SocketTest"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <StackPanel Name="Crypto" Margin="10">
+            <!--Crypto panel-->
+            <TextBlock x:Name="stateBanner">
+                        RSA state
+            </TextBlock>
+            <StackPanel Orientation="Horizontal">  <!--I/O stack-->
+                <StackPanel Margin="10">  <!--Save slot-->
+                    <Button Name="btnSavePriKey" Click="BtnSavePriKey_Click">
+                        SaveRsaPriKey
+                    </Button>
+                    <Button Name="btnSavePubKey" Click="BtnSavePubKey_Click">
+                        SaveRsaPubKey
+                    </Button>
+                </StackPanel>
+                <StackPanel Margin="10">  <!--Set slot-->
+                    <Button Name="btnSetPriKey" Click="BtnSetPriKey_Click">
+                        SetRsaPriKey
+                    </Button>
+                    <Button Name="btnSetPubKey" Click="BtnSetPubKey_Click">
+                        SetRsaPubKey
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <!--Standby/Send Session Key!-->
+            <Button Name="btnSendSessionKey" Click="BtnSendSessionKey_Click">
+                Standby!
+            </Button>
+            <TextBox Name="txtSeed" PreviewKeyDown="txtSeed_PreviewKeyDown">
+                Randomly Press Many Keys Here
+            </TextBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

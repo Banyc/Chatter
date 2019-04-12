@@ -7,52 +7,96 @@
         mc:Ignorable="d"
         Title="Socket" Height="450" Width="800"
         SizeToContent="WidthAndHeight">
-    <StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="10">
-            <TextBox Name="txtIpAddress">
-                127.0.0.1
-            </TextBox>
-            <TextBlock Text=": "/>
-            <TextBox Name="txtPort">
-                11000
-            </TextBox>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="10">
-            <StackPanel Name="ClientPanel" Margin="10">
-                <TextBlock>
-                    Client
-                </TextBlock>
-                <Button Height="50"
-                        Click="btnClientActivate">
-                    btnClientActivate
-                </Button>
-                <Button Height="50"
-                        Click="btnClientSend">
-                    btnClientSend
-                </Button>
-                <TextBox Name="txtClient">
-                    txtClient
-                </TextBox>
-            </StackPanel>
-            <StackPanel Name="ServerPanel" Margin="10">
-                <TextBlock>
-                    Server
-                </TextBlock>
-                <Button Height="50"
-                        Click="btnServerActivate">
-                    btnServerActivate
-                </Button>
-                <Button Height="50"
-                        Click="btnServerSend">
-                    btnServerSend
-                </Button>
-                <TextBox Name="txtServer">
-                    txtServer
-                </TextBox>
-            </StackPanel>
-        </StackPanel>
-        
-    </StackPanel>
+    <Grid>
+        <Grid Name="loginPanel">
+            
+            <StackPanel>  <!--login panel-->
+                <StackPanel Margin="10">  <!-- iP addresses -->
+                    <StackPanel Margin="0,0,0,10">
+                        <TextBlock>
+                            Server Address:
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
+                   
+                            <TextBox Name="txtIpAddress">
+                                127.0.0.1
+                            </TextBox>
+                            <TextBlock Text=": "/>
+                            <TextBox Name="txtPort">
+                                11000
+                            </TextBox>
+                    
+                        </StackPanel>
+                    
+                    </StackPanel>
+                    <StackPanel Margin="0, 0, 0, 10">
+                        <TextBlock TextWrapping="Wrap">
+                            Expected Client Address: 
+                            <LineBreak/>
+                            (Only server should consider. 
+                            <LineBreak/>
+                            Leave blank to receive all)
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
+                            <TextBox Name="txtExpectedIpAddress">
+                                
+                            </TextBox>
+                            <TextBlock Text=": "/>
+                            <TextBlock>
+                                *
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
 
-    
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="10">  <!-- select role as client or server -->
+                    <StackPanel Name="ClientPanel" Margin="10">  <!--Client panel-->
+                        <TextBlock>
+                            Client
+                        </TextBlock>
+                        <Button Name="btnClientActivate"
+                                    Height="50"
+                                    Click="btnClientActivate_Click">
+                            btnClientActivate
+                        </Button>
+
+                    </StackPanel>
+                    <StackPanel Name="ServerPanel" Margin="10">  <!-- server panel -->
+                        <TextBlock>
+                            Server
+                        </TextBlock>
+                        <Button Name="btnServerActivate"
+                                Height="50"
+                                Click="btnServerActivate_Click">
+                            btnServerActivate
+                        </Button>
+                            
+                    </StackPanel>
+                    
+                </StackPanel>
+                <StackPanel Name="plainTextPanel" Margin="10">  <!-- plain text sender -->
+                    <Button Name="btnSend"
+                            Height="50"
+                            Click="btnSend_Click">
+                        btnSend
+                    </Button>
+                    <TextBox Name="txtSend">
+                        txtSend
+                    </TextBox>
+                </StackPanel>
+
+                <local:CryptoPanel x:Name="cryptoPanel" Margin="10" >
+                    
+                </local:CryptoPanel>
+                <StackPanel>  <!--TEST PANEL-->
+                    <Button Click="btnTest_Click">
+                        test.1
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+        <local:ChatBox x:Name="chatBox" Margin="10">
+
+        </local:ChatBox>
+    </Grid>
 </Window>

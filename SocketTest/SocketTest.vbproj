@@ -86,9 +86,25 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AesApi.vb" />
+    <Compile Include="ChatBox.xaml.vb">
+      <DependentUpon>ChatBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CryptoPanel.xaml.vb">
+      <DependentUpon>CryptoPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RsaApi.vb" />
     <Compile Include="SocketBase.vb" />
     <Compile Include="SocketClient.vb" />
     <Compile Include="SocketListener.vb" />
+    <Page Include="ChatBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CryptoPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
