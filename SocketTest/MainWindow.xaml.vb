@@ -146,4 +146,8 @@ Class MainWindow
     End Sub
 #End Region
 
+#Region "test"
+    Private Sub btnTest_Click(sender As Object, e As RoutedEventArgs)
+    End Sub
+#End Region
 End Class

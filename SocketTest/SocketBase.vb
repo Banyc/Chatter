@@ -41,7 +41,7 @@ Public MustInherit Class SocketBase
 
     Private _handler As Socket = Nothing
 
-    ' ManualResetEvent instances signal completion.  
+    ' ManualResetEvent instances signal completion.
     Private _connectDone As New ManualResetEvent(False)
     Private _encryptDone As New ManualResetEvent(False)
     Private _sendSessionKeyDone As New ManualResetEvent(False)
@@ -52,7 +52,7 @@ Public MustInherit Class SocketBase
     Private _checkConnectThread As Thread
     Private _encryptionStepThread As Thread
 
-    ' Incoming data from the client.  
+    ' Incoming data from the client.
     Private _dataStr As String = Nothing
 
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
@@ -65,7 +65,7 @@ Public MustInherit Class SocketBase
         Public Const ID As String = "ID"
         Public Const Text As String = "TEXT"
         Public Const FeedBack As String = "FB"
-        Public Const Standby As String = "STANDBY"  ' 
+        Public Const Standby As String = "STANDBY"  '
     End Structure
 
     Private _RSA As RsaApi
@@ -154,7 +154,7 @@ Public MustInherit Class SocketBase
                 Dim thread As New Thread(
                         Sub()
                             _connectDone.WaitOne()
-                            ' Send the data through the socket.  
+                            ' Send the data through the socket.
                             Dim bytesSent As Integer = handler.Send(msgAttached)
                             thread.Abort()
                         End Sub)
@@ -276,7 +276,7 @@ Public MustInherit Class SocketBase
 
 
         ElseIf _dataStr.EndsWith(MessageTypeBody(MessageType.ENDOFSTREAM)) Then ' if data was not encrypted
-            cookedData = _dataStr.Substring(0, _dataStr.Length - MessageTypeBody(MessageType.ENDOFSTREAM).Length)  ' not allow plain text anymore, which will be considered as encrypted message  ' TODO: disdinguish plain text and encrypted message since plain text attaches "<EOF>" 
+            cookedData = _dataStr.Substring(0, _dataStr.Length - MessageTypeBody(MessageType.ENDOFSTREAM).Length)  ' not allow plain text anymore, which will be considered as encrypted message  ' TODO: disdinguish plain text and encrypted message since plain text attaches "<EOF>"
             '_msgReceivedQueue.Enqueue(cookedData)
 
             'MessageBox.Show(cookedData, _socketCS.ToString() & " received msg")
@@ -315,11 +315,11 @@ Public MustInherit Class SocketBase
     Private Sub Receive(handler As Socket)
 
         If Not handler Is Nothing Then
-            ' Data buffer for incoming data.  
+            ' Data buffer for incoming data.
             Dim bytes() As Byte = New [Byte](1024 - 1) {}
             '_dataStr = Nothing
 
-            ' An incoming connection needs to be processed.  
+            ' An incoming connection needs to be processed.
             'While True
             Try
                 Dim bytesRec As Integer = handler.Receive(bytes)
@@ -370,7 +370,7 @@ Public MustInherit Class SocketBase
             IsShutdown = True
 
             If Not handler Is Nothing Then
-                ' Release the socket.  
+                ' Release the socket.
                 handler.Shutdown(SocketShutdown.Both)  ' it cannot be shutdown while the thread is running
                 handler.Close()
                 handler.Dispose()
