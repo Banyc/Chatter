@@ -388,7 +388,8 @@ Public MustInherit Class SocketBase
 
             If Not _checkConnectThread Is Nothing Then
                 If _checkConnectThread.IsAlive Then
-                    _checkConnectThread.Abort()  ' unknown side effect
+                    _checkConnectThread.Abort()  ' known side effect: dead thread cannot update state of a broken connection anymore.
+                    RaiseEvent Disconnected()  ' manually update its state
                 End If
             End If
 
