@@ -151,3 +151,4 @@ Basic steps are shown below
 - [ ] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
+- [ ] allow customizing the generation of IV of AES
