@@ -224,6 +224,10 @@ Procedure
 - *A* receives the feedback
 - *A* displays the message on screen
 
+## Known BUG
+
+- The thread might fail to exit. Check your process manually to make sure the program has exited
+
 ## Acknowledgement
 
 - Authors whose original code is at the website whose links were written between my codes.
