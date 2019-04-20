@@ -152,3 +152,5 @@ Basic steps are shown below
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
 - [ ] allow customizing the generation of IV of AES
+- [ ] reduce the three-time handshakes to just once
+- [ ] change IV for each message. IV can be made public
