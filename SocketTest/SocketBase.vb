@@ -131,11 +131,21 @@ Public MustInherit Class SocketBase
 
         If _encryptDone.WaitOne(0) Then  ' send cipher text
             Dim msgBytes As Byte()
+
+            ' updates new IV
+            Dim bIv As Byte() = _AES.GetNewIV()
+            _AES.SetIV(bIv)
+
             ' Encrypt the data
             msgBytes = _AES.EncryptMsg(msgStr & MessageTypeBody(MessageType.ENDOFSTREAM))
 
+            ' prepend IV to cipher text
+            Dim packet As Byte()
+            packet = bIv.Concat(msgBytes).ToArray()
+
             ' Encrypted data cannot attach anything
-            SendBytes(handler, msgBytes)
+            SendBytes(handler, packet)
+
         Else  ' send plain text without encrypting it
             ' Encode the data string into a byte array.
             'Dim msg As Byte() = Encoding.ASCII.GetBytes(msgStr & ENDOFSTREAM)
@@ -276,8 +286,23 @@ Public MustInherit Class SocketBase
 
         ' Enqueue all the stuff received below
         If _encryptDone.WaitOne(0) Then ' if the encryption is done
+            ' :: decrypt message ::
+
+            ' extract IV and cipher text
+            Dim iV As Byte()
+            iV = bytes.Take(_AES.GetIvSize() / 8).ToArray()
+            Dim cipher As Byte()
+            cipher = bytes.Skip(_AES.GetIvSize() / 8).Take(bytesRec - _AES.GetIvSize() / 8).ToArray()
+
+            ' updates IV
+            _AES.SetIV(iV)
+
             ' decrypt message
-            _dataStr = _AES.DecryptMsg(bytes)
+            _dataStr = _AES.DecryptMsg(cipher)
+
+            ' :: End Decryption ::
+
+            ' clears out "<EOF>" attachment
             Dim lengthMsg As Integer
             lengthMsg = _dataStr.LastIndexOf(MessageTypeBody(MessageType.ENDOFSTREAM)) + 1
             cookedData = _dataStr.Substring(0, lengthMsg - 1)

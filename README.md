@@ -128,9 +128,23 @@ Basic steps are shown below
     ' whoever (here is 1) encrypts message by session key
     cipherText = AES1.EncryptMsg(plainText)
 
+    ' updates new IV
+    newIv = AES1.GetNewIv()
+    AES1.SetIv(newIv)
+
+    ' prepends IV to cipherText
+    aesPacket = __CONCAT(newIv, cipherText)
+
     ' whoever (here is 1) sends
 
     ' the opposite (here is 2) received
+
+    ' splits IV and cipherText out
+    IV = aesPacket.__FirstPart
+    cipherText = aesPacket.__LastPart
+
+    ' updates IV
+    IV = AES2.SetIv(IV)
 
     ' the opposite (here is 2) decrypt message by session key
     plainText = AES2.DecryptMsg(cipherText)
@@ -151,6 +165,6 @@ Basic steps are shown below
 - [ ] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
-- [ ] allow customizing the generation of IV of AES
+- ~~[ ] allow customizing the generation of IV of AES~~
 - [ ] reduce the three-time handshakes to just once
-- [ ] change IV for each message. IV can be made public
+- [x] change IV for each message. IV can be made public
