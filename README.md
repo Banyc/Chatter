@@ -1,6 +1,6 @@
 # Chatter
 
-chat with your friend freely in Intranet
+Chat with your friend freely on the Intranet!
 
 ## Warnings
 
@@ -13,22 +13,51 @@ chat with your friend freely in Intranet
 - It is your job to check if other's public key is authentic
 - make sure that the signal "encrypted" is shown before sending credential messages.
 - if others sniff the traffic, the message can be cracked theoretically by brute force though it might take a long time
+- Chances are, though few, the unknown defect of the overall encryption logic or of the cryptography might be a potential security threat.
+
+## How to use
+
+- Specify the IP address of the **server's**
+- Pick a proper role as either a server or a client
+- If 've not saved key pair yet
+  - save key pair
+- If 've saved key pair
+  - load up your own private key
+- Send public key to your friend in any channel if not 've done
+- Double check the authenticity of the incoming public key with your friend
+- Load up **other's** public key
+- Randomly type some key to the text box at the bottom of the window. Better more.
+- Wait until your friend has successfully connected to your app
+- Click "Standby" or "Send Session Key!"
+- Chat with your friend freely!
 
 ## File Structure
 
-Classes
+Class
 
-- "MainWindow.xaml.vb" is the main entry of the program
+- "MainWindow.xaml.vb" - main entry of the program
+- "ChatBox.xaml.vb" - code behind UI for chat interface
+- "CryptoPanel.xaml.vb" - code behind UI for cryptography interface
+- "AesApi.vb" - providing AES
+- "RsaApi.vb" - providing RSA
+- "SocketBase.vb" - handling all logics of socket operations
+- "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
+- "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
+- "SocketManager.vb" - pending for releasing some code from "SocketBase.vb"
 
 Xaml
 
-- "MainWindow.xaml"
+- "MainWindow.xaml" - main entry of the program
+- "ChatBox.xaml" - UI for chat interface
+- "CryptoPanel.xaml" - UI for cryptography interface
 
-## Principle
+## Basic Principles
 
 ### Encryption
 
-Basic steps are shown below
+Basic steps are shown in pseudo-code below
+
+#### Three-way handshake
 
 ```VB
     Dim sKey As Byte()
@@ -122,7 +151,11 @@ Basic steps are shown below
     If Not sKey.SequenceEqual(_AES.GetSessionKey()) Then Error()
     If Not IV.SequenceEqual(_AES.GetIV()) Then Error()
     '''''''''''''''''End handshake for three times''''''''''''''''''''
+```
 
+#### Sessional Chat
+
+```VB
     ''''''''''''''''Begin Chat''''''''''''''''''
 
     ' whoever (here is 1) encrypts message by session key
@@ -150,11 +183,50 @@ Basic steps are shown below
     plainText = AES2.DecryptMsg(cipherText)
 ```
 
+### Message Format
+
+#### Cipher message
+
+- plain text - `<ID>112</ID><TEXT>this is a text</TEXT><EOF/>`
+
+- cipher text - denoted as `[c]`, which is stored in byte array `As Byte()`, encrypted from the plain text
+
+- IV - denoted as `[IV]`, which is stored in byte array `As Byte()`
+
+- send-out package - `[IV][c]`
+
+#### Plain-text message
+
+- plain text - `<ID>112</ID><TEXT>this is a text</TEXT><EOF/>`
+
+#### Feedback message
+
+- plain text - `<ID>112</ID><FB/><EOF/>`
+
+- remaining process goes to "cipher message" part
+
+#### Standby message
+
+- `<STANDBY/><EOF/>`
+
+#### Handshake message
+
+- encrypted session key - stored in byte array `As Byte()`
+
 ### Feedback system
 
-- sender sends a message
+Procedure
 
-### Message Format
+- sender *A* sends a message
+- receiver *B* received the message
+- receiver *B* sends a feedback to *A*
+- *B* displays the message on screen
+- *A* receives the feedback
+- *A* displays the message on screen
+
+## Acknowledgement
+
+- Authors whose original code is at the website whose links were written between my codes.
 
 ## TODO
 
@@ -165,6 +237,6 @@ Basic steps are shown below
 - [ ] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
-- ~~[ ] allow customizing the generation of IV of AES~~
+- [ ] ~~allow customizing the generation of IV of AES~~
 - [ ] reduce the three-time handshakes to just once
 - [x] change IV for each message. [IV can be made public](https://crypto.stackexchange.com/questions/3965/what-is-the-main-difference-between-a-key-an-iv-and-a-nonce)
