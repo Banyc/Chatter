@@ -167,4 +167,4 @@ Basic steps are shown below
 - [ ] change session key during the same session
 - ~~[ ] allow customizing the generation of IV of AES~~
 - [ ] reduce the three-time handshakes to just once
-- [x] change IV for each message. IV can be made public
+- [x] change IV for each message. [IV can be made public](https://crypto.stackexchange.com/questions/3965/what-is-the-main-difference-between-a-key-an-iv-and-a-nonce)
