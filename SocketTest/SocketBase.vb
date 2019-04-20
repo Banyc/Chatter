@@ -48,12 +48,18 @@ Public MustInherit Class SocketBase
     Private _receiveSessionKeyDone As New ManualResetEvent(False)
     Private _handshakeTimes As Integer
 
+    ' Thread pointers
     Private _listenThread As Thread
     Private _checkConnectThread As Thread
     Private _encryptionStepThread As Thread
 
     ' Incoming data from the client.
     Private _dataStr As String = Nothing
+
+    ' checks the integrity and authenticity of the incoming message
+    ' against replay attack
+    Private _myMsgId As UInteger
+    Private _othersMsgId As UInteger
 
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
     Private _msgNoComfirmedList As Dictionary(Of Integer, String)  ' stores sended messages  ' msgID : msgText
@@ -86,6 +92,10 @@ Public MustInherit Class SocketBase
 
         _handshakeTimes = 0
 
+        Dim rnd As New Random()
+        _myMsgId = CUInt(rnd.Next())
+        _othersMsgId = Nothing
+
         IsOppositeStandby = False
 
         CheckConnectLoop()
@@ -95,17 +105,12 @@ Public MustInherit Class SocketBase
     Public MustOverride Sub Start()
 
 #Region "on transmission / send"
+
     '
     Public Sub SendText(plainText As String)
-        'Send(_handler, msgStr)
+        _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
 
-        Dim msgID As UInteger
-        If _msgNoComfirmedList.Any Then
-            msgID = _msgNoComfirmedList.Last.Key + 1
-        Else
-            msgID = 1
-        End If
-        SendText(plainText, msgID)
+        SendText(plainText, _myMsgId)
     End Sub
 
     Private Sub SendText(plainText As String, id As Integer)
@@ -196,7 +201,7 @@ Public MustInherit Class SocketBase
                             Exit While
                         End If
                     End If
-                        Thread.Sleep(2000)
+                    Thread.Sleep(2000)
                 End While
                 _checkConnectThread.Abort()
             End Sub)
@@ -230,9 +235,23 @@ Public MustInherit Class SocketBase
                                      Dim text As String
                                      Dim msgID As UInteger
 
-                                     If plainMsg.IndexOf(MessageTypeStart(MessageType.Text)) >= 0 Then
+                                     If plainMsg.IndexOf(MessageTypeStart(MessageType.Text)) >= 0 Then  ' it is a text message
                                          text = GetCertainContent(plainMsg, MessageType.Text)
                                          msgID = Int(GetCertainContent(plainMsg, MessageType.ID))
+
+                                         ' checks the integrity and authenticity of the incoming message
+                                         If _othersMsgId = Nothing Then  ' update other's message id
+                                             _othersMsgId = msgID
+                                         Else
+                                             Dim incrementedId As UInteger
+                                             incrementedId = UIntIncrement(_othersMsgId)
+                                             If incrementedId <> msgID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
+                                                 MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
+                                                 thread.Abort()
+                                                 Exit Sub
+                                             End If
+                                             _othersMsgId = incrementedId
+                                         End If
 
                                          SendFeedback(msgID)  ' send feedback to the sender
 
@@ -339,7 +358,7 @@ Public MustInherit Class SocketBase
     End Sub
 #End Region
 
-#Region "details"
+#Region "shared details"
     ' https://stackoverflow.com/questions/722240/instantly-detect-client-disconnection-from-server-socket
     ' detects if the connection is terminated
     Private Shared Function IsConnect(handler As Socket) As Boolean
@@ -433,6 +452,14 @@ Public MustInherit Class SocketBase
             decrement = decrement / Byte.MaxValue
         Next i
         Return bVal
+    End Function
+
+    Private Shared Function UIntIncrement(uInt As UInteger)
+        If uInt = UInteger.MaxValue Then
+            Return UInteger.MinValue
+        Else
+            Return uInt + 1
+        End If
     End Function
 
     Private Shared Function MessageTypeStart(state As String) As String
