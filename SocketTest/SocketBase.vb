@@ -62,7 +62,7 @@ Public MustInherit Class SocketBase
     Private _othersMsgId As UInteger
 
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
-    Private _msgNoComfirmedList As Dictionary(Of Integer, String)  ' stores sended messages  ' msgID : msgText
+    Private _msgNotComfirmedList As Dictionary(Of Integer, String)  ' stores sended messages  ' msgID : msgText
     'Private _msgOnScreen As List(Of String)
     Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted seesion key and IV, which are still bytes
 
@@ -84,7 +84,7 @@ Public MustInherit Class SocketBase
         _ip = ip
         _port = port
         EndPointType = socketCS
-        _msgNoComfirmedList = New Dictionary(Of Integer, String)
+        _msgNotComfirmedList = New Dictionary(Of Integer, String)
         _msgReceivedQueue = New Queue(Of String)
         _byteQueue = New Queue(Of Byte())
         _socketCS = socketCS
@@ -105,7 +105,6 @@ Public MustInherit Class SocketBase
     Public MustOverride Sub Start()
 
 #Region "on transmission / send"
-
     '
     Public Sub SendText(plainText As String)
         _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
@@ -118,7 +117,7 @@ Public MustInherit Class SocketBase
         compasser = MessageTypeStart(MessageType.ID) & Str(id) & MessageTypeEnd(MessageType.ID) &
         MessageTypeStart(MessageType.Text) & plainText & MessageTypeEnd(MessageType.Text)
 
-        _msgNoComfirmedList.Add(id, plainText)
+        _msgNotComfirmedList.Add(id, plainText)
         Send(_handler, compasser)
     End Sub
 
@@ -130,7 +129,7 @@ Public MustInherit Class SocketBase
     ' send plain or encrypted message
     Private Sub Send(handler As Socket, msgStr As String)
 
-        If _encryptDone.WaitOne(0) Then
+        If _encryptDone.WaitOne(0) Then  ' send cipher text
             Dim msgBytes As Byte()
             ' Encrypt the data
             msgBytes = _AES.EncryptMsg(msgStr & MessageTypeBody(MessageType.ENDOFSTREAM))
@@ -146,7 +145,7 @@ Public MustInherit Class SocketBase
 
     End Sub
 
-    ' send session key and encrypted message without attaching anything
+    ' send session key or encrypted message without attaching anything
     Private Sub SendBytes(handler As Socket, msgByte As Byte())
         _Send(handler, msgByte)
     End Sub
@@ -271,11 +270,9 @@ Public MustInherit Class SocketBase
     End Sub
 
     Private Sub DistributeReceivedMessage(bytesRec As Integer, bytes As Byte())
-        '_dataStr += Encoding.ASCII.GetString(bytes, 0, bytesRec)  ' plain text
-        _dataStr += Encoding.UTF8.GetString(bytes, 0, bytesRec)  ' plain text
+        _dataStr += Encoding.UTF8.GetString(bytes, 0, bytesRec)  ' try to get plain text
 
-        'If _dataStr.EndsWith(ENDOFSTREAM) Or True Then  ' encrypted message can be processed without `ENDOFSTREAM`
-        Dim cookedData As String
+        Dim cookedData As String  ' plain text without "<EOF>"
 
         ' Enqueue all the stuff received below
         If _encryptDone.WaitOne(0) Then ' if the encryption is done
@@ -285,14 +282,11 @@ Public MustInherit Class SocketBase
             lengthMsg = _dataStr.LastIndexOf(MessageTypeBody(MessageType.ENDOFSTREAM)) + 1
             cookedData = _dataStr.Substring(0, lengthMsg - 1)
 
+            ' further parses the decrypted data
             AsyncParsePlainMsg(cookedData)
-
 
             'MessageBox.Show(cookedData, _socketCS.ToString() & " received msg")
             _dataStr = Nothing
-
-
-
 
         ElseIf _dataStr.EndsWith(MessageTypeBody(MessageType.ENDOFSTREAM)) Then ' if data was not encrypted
             cookedData = _dataStr.Substring(0, _dataStr.Length - MessageTypeBody(MessageType.ENDOFSTREAM).Length)  ' not allow plain text anymore, which will be considered as encrypted message  ' TODO: disdinguish plain text and encrypted message since plain text attaches "<EOF>"
@@ -486,7 +480,7 @@ Public MustInherit Class SocketBase
 
 #End Region
 
-#Region "hand-shake"
+#Region "three-way-handshake"
     ' Actively build a tunnel
     Public Sub MakeEncryptTunnel(seed As Integer)
         If IsOppositeStandby Then
@@ -563,8 +557,8 @@ Public MustInherit Class SocketBase
 
 #Region "Feedback"
     Private Sub ReceiveFeedback(msgID As Integer)
-        RaiseEvent ReceivedFeedBack(_msgNoComfirmedList(msgID))
-        _msgNoComfirmedList.Remove(msgID)
+        RaiseEvent ReceivedFeedBack(_msgNotComfirmedList(msgID))
+        _msgNotComfirmedList.Remove(msgID)
     End Sub
 
     Private Sub SendFeedback(msgID As Integer)
