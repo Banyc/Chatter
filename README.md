@@ -215,13 +215,15 @@ Basic steps are shown in pseudo-code below
 
 ### Feedback system
 
-Procedure
+Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 
-- sender *A* sends a message
-- receiver *B* received the message
-- receiver *B* sends a feedback to *A*
+- sender *A* sends a message with ID `aID`, which is the same as `aID' + 1`
+- receiver *B* received the message with ID `aID`
+- *B* verifies `aID` with the previous message ID `aID'` from *A*
+  - expected equation - `aID' + 1 == aID`
+- receiver *B* sends a feedback to *A* with ID `aID`
 - *B* displays the message on screen
-- *A* receives the feedback
+- *A* receives the feedback with ID `aID`
 - *A* displays the message on screen
 
 ## Known BUG
