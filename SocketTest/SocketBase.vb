@@ -64,7 +64,7 @@ Public MustInherit Class SocketBase
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
     Private _msgNotComfirmedList As Dictionary(Of Integer, String)  ' stores sended messages  ' msgID : msgText
     'Private _msgOnScreen As List(Of String)
-    Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted seesion key and IV, which are still bytes
+    Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted session key and IV, which are still bytes
 
     Private Structure MessageType
         Public Const ENDOFSTREAM As String = "EOF"  ' identification of a plain text
@@ -115,7 +115,7 @@ Public MustInherit Class SocketBase
     Private Sub SendText(plainText As String, id As Integer)
         Dim compasser As String
         compasser = MessageTypeStart(MessageType.ID) & Str(id) & MessageTypeEnd(MessageType.ID) &
-        MessageTypeStart(MessageType.Text) & plainText & MessageTypeEnd(MessageType.Text)
+                    MessageTypeStart(MessageType.Text) & plainText & MessageTypeEnd(MessageType.Text)
 
         _msgNotComfirmedList.Add(id, plainText)
         Send(_handler, compasser)
