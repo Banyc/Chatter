@@ -183,6 +183,13 @@ Basic steps are shown in pseudo-code below
     plainText = AES2.DecryptMsg(cipherText)
 ```
 
+#### Session Key
+
+Session key is a key for AES, which is created randomly.
+The randomization is both human-based and time-based, whose byte's representations are merged through XOR operation.
+At last, the random byte array will be processed by SHA256 hashing.
+The final hashing return will be the session key.
+
 ### Message Format
 
 #### Cipher message
@@ -246,3 +253,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] ~~allow customizing the generation of IV of AES~~
 - [ ] reduce the three-time handshakes to just once
 - [x] change IV for each message. [IV can be made public](https://crypto.stackexchange.com/questions/3965/what-is-the-main-difference-between-a-key-an-iv-and-a-nonce)
+- [x] salting session key

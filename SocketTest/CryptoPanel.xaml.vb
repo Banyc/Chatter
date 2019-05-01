@@ -96,6 +96,7 @@
             If Not hashValue = Nothing Then
                 'btnSendSessionKey.IsEnabled = False  ' prevent misbehaving
                 _socket.MakeEncryptTunnel(hashValue)
+                stateBanner.Text = "Stand-by message sent." & vbNewLine & "Your key will not be used."
             End If
         End If
     End Sub

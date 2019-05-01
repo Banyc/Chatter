@@ -7,6 +7,7 @@ Imports System.IO
 Public Class AesApi
     Private _csp As AesCryptoServiceProvider
     Private _rnd As Random
+    Private Shared _IsIvUsed As Boolean = False  ' restrict reusing of IV
 
     Public Sub New(seed As Integer)
         _rnd = New Random(seed)
@@ -25,11 +26,34 @@ Public Class AesApi
 
     Public Sub SetIV(iV As Byte())
         _csp.IV = iV
+        _IsIvUsed = False
+    End Sub
+
+    Public Sub NewSeed(seed As Integer)
+        _rnd = New Random(seed)
     End Sub
 
     Private Function GetNewSessionKey() As Byte()
+        ' create key
         Dim bKey(_csp.KeySize / 8 - 1) As Byte
         _rnd.NextBytes(bKey)
+        _rnd = Nothing  ' the seed can only be used once
+
+        ' create salt
+        Dim rndTime As New Random()
+        Dim tmpB(bKey.Length - 1) As Byte
+        rndTime.NextBytes(tmpB)
+
+        ' merge the two byte arrays
+        Dim i As Integer
+        For i = 0 To bKey.Length - 1
+            bKey(i) = bKey(i) Xor tmpB(i)
+        Next
+
+        ' hash bKey
+        Dim sha256 As New SHA256Managed()
+        bKey = sha256.ComputeHash(bKey)
+
         Return bKey
     End Function
 
@@ -57,20 +81,26 @@ Public Class AesApi
     End Function
 
     Public Function EncryptMsg(plainText As Object) As Byte()
-        Dim encryptor As ICryptoTransform = _csp.CreateEncryptor(_csp.Key, _csp.IV)
-        Dim encrypted() As Byte
+        If Not _IsIvUsed Then
+            _IsIvUsed = True  ' IV can only be used once
+            Dim encryptor As ICryptoTransform = _csp.CreateEncryptor(_csp.Key, _csp.IV)
+            Dim encrypted() As Byte
 
-        ' Create the streams used for encryption.
-        Using msEncrypt As New MemoryStream()
-            Using csEncrypt As New CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write)
-                Using swEncrypt As New StreamWriter(csEncrypt)
-                    'Write all data to the stream.
-                    swEncrypt.Write(plainText)
+            ' Create the streams used for encryption.
+            Using msEncrypt As New MemoryStream()
+                Using csEncrypt As New CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write)
+                    Using swEncrypt As New StreamWriter(csEncrypt)
+                        'Write all data to the stream.
+                        swEncrypt.Write(plainText)
+                    End Using
+                    encrypted = msEncrypt.ToArray()
                 End Using
-                encrypted = msEncrypt.ToArray()
             End Using
-        End Using
-        Return encrypted
+            Return encrypted
+        Else
+            Throw New Exception("IV of AES are used more than once")
+            Return Nothing
+        End If
     End Function
 
     Public Function DecryptMsg(cipherText As Byte()) As String
