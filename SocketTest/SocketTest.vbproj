@@ -93,6 +93,7 @@
     <Compile Include="CryptoPanel.xaml.vb">
       <DependentUpon>CryptoPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FlashWindow.vb" />
     <Compile Include="RsaApi.vb" />
     <Compile Include="SocketBase.vb" />
     <Compile Include="SocketClient.vb" />

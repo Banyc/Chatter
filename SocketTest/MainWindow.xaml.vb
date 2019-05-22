@@ -4,12 +4,14 @@ Class MainWindow
     Private WithEvents _client As SocketClient
     Private WithEvents _server As SocketListener
     Private WithEvents _socket As SocketBase
+    Private _IsFlashing As Boolean
 
     Public Sub New()
         InitializeComponent()
         plainTextPanel.Visibility = True
         cryptoPanel.Visibility = True
         chatBox.Visibility = True
+        _IsFlashing = False
     End Sub
 
 #Region "Events of controls"
@@ -65,10 +67,12 @@ Class MainWindow
     End Sub
 #End Region
 
-#Region "socket events"
+#Region "socket events"  ' Inside which should let dispatcher invoke procedures concerning GUI
     Private Sub _socket_ReceiveMsg() Handles _socket.ReceiveMsg
         'txtServer.Text = _socket.GetEarlyMsg()
         Receive(_socket)
+
+        FlashTaskbar()
     End Sub
 
     Private Sub _socket_ReceivedFeedBack(myText As String) Handles _socket.ReceivedFeedBack
@@ -143,6 +147,17 @@ Class MainWindow
     Private Sub PrepareChatBox()
         loginPanel.Visibility = True
         chatBox.Visibility = False
+    End Sub
+
+    Private Sub FlashTaskbar()
+        Me.Dispatcher.
+            BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                        Sub()
+                            If Not Me.IsActive And Not _IsFlashing Then
+                                FlashWindow.Start(Me)
+                                _IsFlashing = True
+                            End If
+                        End Sub)
     End Sub
 #End Region
 
