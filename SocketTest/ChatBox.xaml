@@ -10,11 +10,15 @@
     <Grid>
         <StackPanel>
             <ScrollViewer Name="scroll" Height="300">
-                <TextBlock Name="txtMessage" TextWrapping="Wrap"> <!--message display-->
-                
-                </TextBlock>
+                <TextBox Name="txtMessage"
+                         Background="Transparent" 
+                         BorderThickness="0"
+                         Text="{Binding Text, Mode=OneWay}"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap" />
+                <!--message display--> <!--https://stackoverflow.com/questions/136435/any-way-to-make-a-wpf-textblock-selectable-->
             </ScrollViewer>
-            <TextBox Name="txtInput" Height="100" TextWrapping="Wrap"> <!--input box-->
+            <TextBox Name="txtInput" Height="100" TextWrapping="Wrap" AcceptsReturn="True"> <!--input box-->
             </TextBox>
 
             <StackPanel Orientation="Horizontal"
