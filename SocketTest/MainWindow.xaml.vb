@@ -150,14 +150,14 @@ Class MainWindow
     End Sub
 
     Private Sub FlashTaskbar()
-        Me.Dispatcher.
-            BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
-                        Sub()
-                            If Not Me.IsActive And Not _IsFlashing Then
+        If Not Me.IsActive And Not _IsFlashing Then
+            Me.Dispatcher.
+                BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                            Sub()
                                 FlashWindow.Start(Me)
                                 _IsFlashing = True
-                            End If
-                        End Sub)
+                            End Sub)
+        End If
     End Sub
 #End Region
 
