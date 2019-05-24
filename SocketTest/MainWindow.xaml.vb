@@ -8,53 +8,57 @@ Class MainWindow
 
     Public Sub New()
         InitializeComponent()
-        plainTextPanel.Visibility = True
-        cryptoPanel.Visibility = True
-        chatBox.Visibility = True
+        'plainTextPanel.Visibility = Visibility.Collapsed
+        cryptoPanel.Visibility = Visibility.Collapsed
+        chatBox.Visibility = Visibility.Collapsed
         _IsFlashing = False
     End Sub
 
 #Region "Events of controls"
-    Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
-        If Not _socket Is Nothing Then
-            _socket.SendText(txtSend.Text)
-        End If
-    End Sub
+    'Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
+    '    If Not _socket Is Nothing Then
+    '        _socket.SendText(txtSend.Text)
+    '    End If
+    'End Sub
 
     Private Sub btnServerActivate_Click(sender As Button, e As RoutedEventArgs)
-        DisableClientOptions()
-        sender.IsEnabled = False
-        DisableIpTxt()
-        If _server Is Nothing Then
-            If _client Is Nothing Then
-                _server = New SocketListener(txtIpAddress.Text, Int(txtPort.Text), txtExpectedIpAddress.Text)
-                _socket = _server  ' mark
-                plainTextPanel.Visibility = False
-                cryptoPanel.Visibility = False
-                cryptoPanel.SetSocket(_socket)
-                _server.Start()
-                Me.Title = "Server"
-            End If
-        End If
-        'PrepareChatBox()
+        btnClientServerActivate_Click(SocketCS.Server, sender, e)
     End Sub
 
     Private Sub btnClientActivate_Click(sender As Button, e As RoutedEventArgs)
+        btnClientServerActivate_Click(SocketCS.Client, sender, e)
+    End Sub
+
+    Private Sub btnClientServerActivate_Click(csType As SocketCS, sender As Button, e As RoutedEventArgs)
         DisableServerOptions()
-        sender.IsEnabled = False
+        DisableClientOptions()
         DisableIpTxt()
         If _client Is Nothing Then
             If _server Is Nothing Then
-                _client = New SocketClient(txtIpAddress.Text, Int(txtPort.Text))
-                _socket = _client  ' mark
-                plainTextPanel.Visibility = False
-                cryptoPanel.Visibility = False
+                Select Case csType
+                    Case SocketCS.Client
+                        _client = New SocketClient(txtIpAddress.Text, Int(txtPort.Text))
+                        _socket = _client  ' mark
+                        Me.Title = "Client"
+                    Case SocketCS.Server
+                        _server = New SocketListener(txtIpAddress.Text, Int(txtPort.Text), txtExpectedIpAddress.Text)
+                        _socket = _server  ' mark
+                        Me.Title = "Server"
+                End Select
+                'plainTextPanel.Visibility = Visibility.Visible
+                cryptoPanel.Visibility = Visibility.Visible
+                CSPanel.Visibility = Visibility.Collapsed
                 cryptoPanel.SetSocket(_socket)
-                _client.Start()
-                Me.Title = "Client"
+                _socket.Start()
             End If
         End If
-        'PrepareChatBox()
+    End Sub
+
+    Private Sub MainWindow_Activated(sender As Object, e As EventArgs) Handles Me.Activated
+        If _IsFlashing Then
+            FlashWindow.Stop(Me)
+            _IsFlashing = False
+        End If
     End Sub
 
     Private Sub MainWindow_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
@@ -76,7 +80,7 @@ Class MainWindow
     End Sub
 
     Private Sub _socket_ReceivedFeedBack(myText As String) Handles _socket.ReceivedFeedBack
-        chatBox.MyReceivedMsg(myText)
+        chatBox.MyMessage(myText)
     End Sub
 
     Private Sub _socket_Connected() Handles _socket.Connected
@@ -145,17 +149,19 @@ Class MainWindow
     End Sub
 
     Private Sub PrepareChatBox()
-        loginPanel.Visibility = True
-        chatBox.Visibility = False
+        loginPanel.Visibility = Visibility.Collapsed
+        chatBox.Visibility = Visibility.Visible
     End Sub
 
     Private Sub FlashTaskbar()
-        If Not Me.IsActive And Not _IsFlashing Then
+        If Not _IsFlashing Then
             Me.Dispatcher.
                 BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                             Sub()
-                                FlashWindow.Start(Me)
-                                _IsFlashing = True
+                                If Not Me.IsActive Then
+                                    FlashWindow.Start(Me)
+                                    _IsFlashing = True
+                                End If
                             End Sub)
         End If
     End Sub

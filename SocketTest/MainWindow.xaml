@@ -32,10 +32,6 @@
                     <StackPanel Margin="0, 0, 0, 10">
                         <TextBlock TextWrapping="Wrap">
                             Expected Client Address: 
-                            <LineBreak/>
-                            (Only server should consider. 
-                            <LineBreak/>
-                            Leave blank to receive all)
                         </TextBlock>
                         <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
                             <TextBox Name="txtExpectedIpAddress">
@@ -49,7 +45,7 @@
                     </StackPanel>
 
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="10">  <!-- select role as client or server -->
+                <StackPanel Name="CSPanel" Orientation="Horizontal" Margin="10">  <!-- select role as client or server -->
                     <StackPanel Name="ClientPanel" Margin="10">  <!--Client panel-->
                         <TextBlock>
                             Client
@@ -59,7 +55,6 @@
                                     Click="btnClientActivate_Click">
                             btnClientActivate
                         </Button>
-
                     </StackPanel>
                     <StackPanel Name="ServerPanel" Margin="10">  <!-- server panel -->
                         <TextBlock>
@@ -70,11 +65,10 @@
                                 Click="btnServerActivate_Click">
                             btnServerActivate
                         </Button>
-                            
                     </StackPanel>
-                    
                 </StackPanel>
-                <StackPanel Name="plainTextPanel" Margin="10">  <!-- plain text sender -->
+                
+                <!--<StackPanel Name="plainTextPanel" Margin="10">  --><!-- plain text sender --><!--
                     <Button Name="btnSend"
                             Height="50"
                             Click="btnSend_Click">
@@ -83,11 +77,12 @@
                     <TextBox Name="txtSend">
                         txtSend
                     </TextBox>
-                </StackPanel>
+                </StackPanel>-->
 
                 <local:CryptoPanel x:Name="cryptoPanel" Margin="10" >
                     
                 </local:CryptoPanel>
+                
                 <StackPanel>  <!--TEST PANEL-->
                     <Button Click="btnTest_Click">
                         test.1
