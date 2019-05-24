@@ -72,10 +72,8 @@ Class MainWindow
 #End Region
 
 #Region "socket events"  ' Inside which should let dispatcher invoke procedures concerning GUI
-    Private Sub _socket_ReceiveMsg() Handles _socket.ReceiveMsg
-        'txtServer.Text = _socket.GetEarlyMsg()
+    Private Sub _socket_ReceivedText() Handles _socket.ReceiveText
         Receive(_socket)
-
         FlashTaskbar()
     End Sub
 
@@ -85,6 +83,7 @@ Class MainWindow
 
     Private Sub _socket_Connected() Handles _socket.Connected
         Connected(_socket)
+        FlashTaskbar()
     End Sub
 
     Private Sub _socket_Encrypted() Handles _socket.Encrypted
@@ -93,6 +92,7 @@ Class MainWindow
 
     Private Sub _socket_Disconnected() Handles _socket.Disconnected
         Disconnected(_socket)
+        FlashTaskbar()
     End Sub
 #End Region
 

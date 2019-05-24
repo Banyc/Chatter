@@ -67,12 +67,22 @@
         End If
     End Function
 
+    Private Sub SetPriKey(keyContent As String)
+        _socket.SetPrivateKey(keyContent)
+    End Sub
+
+    Private Sub SetPubKey(keyContent As String)
+        _socket.SetPublicKey(keyContent)
+        stateBanner.Text = "Public key loaded. Ready to send session key."
+        btnSendSessionKey.IsEnabled = True
+    End Sub
+
     Private Sub BtnSetPriKey_Click(sender As Object, e As RoutedEventArgs)
         If Not _socket Is Nothing Then
             Dim fileName As String
             fileName = GetReadPath()
             If Not fileName Is Nothing Then
-                _socket.SetPrivateKey(IO.File.ReadAllText(fileName))
+                SetPriKey(IO.File.ReadAllText(fileName))
             End If
         End If
     End Sub
@@ -82,9 +92,7 @@
             Dim fileName As String
             fileName = GetReadPath()
             If Not fileName Is Nothing Then
-                _socket.SetPublicKey(IO.File.ReadAllText(fileName))
-                stateBanner.Text = "Other's public key is loaded. Ready to send session key."
-                btnSendSessionKey.IsEnabled = True
+                SetPubKey(IO.File.ReadAllText(fileName))
             End If
         End If
     End Sub
@@ -112,6 +120,26 @@
         Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub()
                                                                                    btnSendSessionKey.Content = "Send Session Key!"
                                                                                End Sub)
+    End Sub
+#End Region
+
+#Region "File Drop on panel"
+    Private Sub CryptoPanel_Drop(sender As Object, e As DragEventArgs)
+        If e.Data.GetDataPresent(DataFormats.FileDrop) Then
+            Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
+            SetKeysFromFile(files)
+        End If
+    End Sub
+
+    Private Sub SetKeysFromFile(files As String())
+        For Each file In files
+            Dim keyContent As String = IO.File.ReadAllText(file)
+            If keyContent.Contains("<P>") Then
+                SetPriKey(keyContent)
+            Else
+                SetPubKey(keyContent)
+            End If
+        Next
     End Sub
 #End Region
 End Class

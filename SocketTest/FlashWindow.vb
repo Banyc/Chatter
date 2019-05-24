@@ -38,7 +38,6 @@ Public Class FlashWindow
 
     Private Shared Function Create_FLASHWINFO(ByVal handle As IntPtr, ByVal flags As UInteger, ByVal count As UInteger, ByVal timeout As UInteger) As FLASHWINFO
         Dim fi As FLASHWINFO = New FLASHWINFO()
-        'fi.cbSize = Convert.ToUInt32(Marshal.SizeOf(fi))
         fi.cbSize = Convert.ToUInt32(System.Runtime.InteropServices.Marshal.SizeOf(fi))
         fi.hwnd = handle
         fi.dwFlags = flags

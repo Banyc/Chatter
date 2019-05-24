@@ -5,15 +5,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SocketTest"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             AllowDrop="True" Drop="CryptoPanel_Drop">
     <Grid>
         <StackPanel Name="Crypto" Margin="10">
             <!--Crypto panel-->
-            <TextBlock x:Name="stateBanner">
+            <TextBlock x:Name="stateBanner" Foreground="Gray">
                         RSA state
             </TextBlock>
             <StackPanel Orientation="Horizontal">  <!--I/O stack-->
-                <StackPanel Margin="10">  <!--Save slot-->
+                <StackPanel Margin="0,10,10,10">  <!--Save slot-->
                     <Button Name="btnSavePriKey" Click="BtnSavePriKey_Click">
                         SaveRsaPriKey
                     </Button>
@@ -21,7 +22,7 @@
                         SaveRsaPubKey
                     </Button>
                 </StackPanel>
-                <StackPanel Margin="10">  <!--Set slot-->
+                <StackPanel Margin="10,10,0,10">  <!--Set slot-->
                     <Button Name="btnSetPriKey" Click="BtnSetPriKey_Click">
                         SetRsaPriKey
                     </Button>

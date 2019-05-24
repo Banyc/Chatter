@@ -19,13 +19,15 @@ Chat with your friend freely on the Intranet!
 
 - Specify the IP address of the **server's**
 - Pick a proper role as either a server or a client
-- If 've not saved key pair yet
-  - save key pair
-- If 've saved key pair
+- If you've not saved the key pair yet
+  - save the key pair
+- If you've saved key pair
   - load up your own private key
+    - you can also drop the file on the window
 - Send public key to your friend in any channel if not 've done
-- Double check the authenticity of the incoming public key with your friend
+- Double check the authenticity of the incoming public key from your friend with him / her
 - Load up **other's** public key
+  - you can also drop the file on the window
 - Randomly type some key to the text box at the bottom of the window. Better more.
 - Wait until your friend has successfully connected to your app
 - Click "Standby" or "Send Session Key!"
@@ -36,11 +38,13 @@ Chat with your friend freely on the Intranet!
 Class
 
 - "MainWindow.xaml.vb" - main entry of the program
+  - Task-bar flashing
 - "ChatBox.xaml.vb" - code behind UI for chat interface
 - "CryptoPanel.xaml.vb" - code behind UI for cryptography interface
+  - File drop
 - "AesApi.vb" - providing AES
 - "RsaApi.vb" - providing RSA
-- "SocketBase.vb" - handling all logics of socket operations
+- "SocketBase.vb" - handling all logic of socket operations
 - "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
 - "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
 - "SocketManager.vb" - pending for releasing some code from "SocketBase.vb"
@@ -237,9 +241,13 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 
 - The thread might fail to exit. Check your process manually to make sure the program has exited
 
+## Known Limitation
+
+- each transmission allows message only up to 1024 bit
+
 ## Acknowledgement
 
-- Authors whose original code is at the website whose links were written between my codes.
+- Authors whose code original on the website is used in this project. Those links of webs were written among code.
 
 ## TODO
 
@@ -250,7 +258,6 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
-- [ ] ~~allow customizing the generation of IV of AES~~
 - [ ] reduce the three-time handshakes to just once
 - [x] change IV for each message. [IV can be made public](https://crypto.stackexchange.com/questions/3965/what-is-the-main-difference-between-a-key-an-iv-and-a-nonce)
 - [x] salting session key

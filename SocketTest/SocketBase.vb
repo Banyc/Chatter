@@ -11,7 +11,7 @@ End Enum
 
 
 Public MustInherit Class SocketBase
-    Public Event ReceiveMsg()
+    Public Event ReceiveText()
     Public Event Connected()
     Public Event OpppsiteStandby()
     Public Event SendedSessionKey()
@@ -105,7 +105,7 @@ Public MustInherit Class SocketBase
     Public MustOverride Sub Start()
 
 #Region "on transmission / send"
-    '
+    ' Public entrance to send text
     Public Sub SendText(plainText As String)
         _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
 
@@ -223,7 +223,7 @@ Public MustInherit Class SocketBase
         ' raise event when the decrypted message is reached
         Dim eventThread As New Thread(
             Sub()
-                RaiseEvent ReceiveMsg()
+                RaiseEvent ReceiveText()
                 eventThread.Abort()
             End Sub)
         eventThread.Start()
@@ -239,6 +239,7 @@ Public MustInherit Class SocketBase
         eventThread.Start()
     End Sub
 
+    ' extract text or signals from the formatted transmitting msg
     Private Sub AsyncParsePlainMsg(plainMsg As String)
         Dim thread As New Thread(Sub()
                                      Dim text As String
@@ -279,6 +280,7 @@ Public MustInherit Class SocketBase
         thread.Start()
     End Sub
 
+    ' distribute the received transmitting msg to other spec functions for further operation and explanation
     Private Sub DistributeReceivedMessage(bytesRec As Integer, bytes As Byte())
         _dataStr += Encoding.UTF8.GetString(bytes, 0, bytesRec)  ' try to get plain text
 
@@ -419,7 +421,9 @@ Public MustInherit Class SocketBase
                     Try
                         _listenThread.Abort()  ' the side effect is to cause error
                     Catch ex As Exception
+#If DEBUG Then
                         MessageBox.Show(ex.ToString())
+#End If
                     End Try
                 End If
             End If
@@ -431,7 +435,9 @@ Public MustInherit Class SocketBase
                 End If
             End If
 
+#If DEBUG Then
             MessageBox.Show("Shutdowned", _socketCS.ToString())
+#End If
         End If
     End Sub
 

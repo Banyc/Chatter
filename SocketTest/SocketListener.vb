@@ -100,7 +100,9 @@ Public Class SocketListener
             ' Program is suspended while waiting for an incoming connection.  
             handler = _listener.Accept()
         Catch ex As Exception
+#If DEBUG Then
             MessageBox.Show(ex.ToString(), SocketCS.Server.ToString())
+#End If
             Shutdown()
         End Try
         Return handler

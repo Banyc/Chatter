@@ -6,14 +6,15 @@
         xmlns:local="clr-namespace:SocketTest"
         mc:Ignorable="d"
         Title="Socket" Height="450" Width="800"
-        SizeToContent="WidthAndHeight">
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize">
     <Grid>
         <Grid Name="loginPanel">
             
             <StackPanel>  <!--login panel-->
-                <StackPanel Margin="10">  <!-- iP addresses -->
+                <StackPanel Margin="20,20,20,0">  <!-- iP addresses -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock>
+                        <TextBlock Foreground="Gray">
                             Server Address:
                         </TextBlock>
                         <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
@@ -30,7 +31,7 @@
                     
                     </StackPanel>
                     <StackPanel Margin="0, 0, 0, 10">
-                        <TextBlock TextWrapping="Wrap">
+                        <TextBlock TextWrapping="Wrap" Foreground="Gray">
                             Expected Client Address: 
                         </TextBlock>
                         <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
@@ -47,23 +48,23 @@
                 </StackPanel>
                 <StackPanel Name="CSPanel" Orientation="Horizontal" Margin="10">  <!-- select role as client or server -->
                     <StackPanel Name="ClientPanel" Margin="10">  <!--Client panel-->
-                        <TextBlock>
+                        <!--<TextBlock Foreground="Gray">
                             Client
-                        </TextBlock>
+                        </TextBlock>-->
                         <Button Name="btnClientActivate"
-                                    Height="50"
+                                    Height="50" Width="100"
                                     Click="btnClientActivate_Click">
-                            btnClientActivate
+                            Client
                         </Button>
                     </StackPanel>
                     <StackPanel Name="ServerPanel" Margin="10">  <!-- server panel -->
-                        <TextBlock>
+                        <!--<TextBlock Foreground="Gray">
                             Server
-                        </TextBlock>
+                        </TextBlock>-->
                         <Button Name="btnServerActivate"
-                                Height="50"
+                                Height="50" Width="100"
                                 Click="btnServerActivate_Click">
-                            btnServerActivate
+                            Server
                         </Button>
                     </StackPanel>
                 </StackPanel>
@@ -79,7 +80,7 @@
                     </TextBox>
                 </StackPanel>-->
 
-                <local:CryptoPanel x:Name="cryptoPanel" Margin="10" >
+                <local:CryptoPanel x:Name="cryptoPanel" Margin="10,0,10,0">
                     
                 </local:CryptoPanel>
                 
