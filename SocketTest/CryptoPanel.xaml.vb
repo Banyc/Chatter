@@ -97,11 +97,12 @@
         End If
     End Sub
 
+    ' send "Stand-by" signal OR send session key to launch key exchange 
     Private Sub BtnSendSessionKey_Click(sender As Object, e As RoutedEventArgs)
         If Not _socket Is Nothing Then
             Dim hashValue As Integer
             hashValue = GetHashValue(seedStr)
-            If Not hashValue = Nothing Then
+            If Not hashValue = Nothing Or Not _socket.IsOppositeStandby() Then  ' sending stand-by signal does not require the generation of a session key
                 'btnSendSessionKey.IsEnabled = False  ' prevent misbehaving
                 _socket.MakeEncryptTunnel(hashValue)
                 stateBanner.Text = "Stand-by message sent." & vbNewLine & "Your key will not be used."
@@ -134,10 +135,12 @@
     Private Sub SetKeysFromFile(files As String())
         For Each file In files
             Dim keyContent As String = IO.File.ReadAllText(file)
-            If keyContent.Contains("<P>") Then
-                SetPriKey(keyContent)
-            Else
-                SetPubKey(keyContent)
+            If keyContent.Contains("RSAParameters") Then
+                If keyContent.Contains("<P>") Then
+                    SetPriKey(keyContent)
+                Else
+                    SetPubKey(keyContent)
+                End If
             End If
         Next
     End Sub

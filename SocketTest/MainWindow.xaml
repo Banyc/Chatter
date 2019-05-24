@@ -83,7 +83,7 @@
                 <local:CryptoPanel x:Name="cryptoPanel" Margin="10,0,10,0">
                     
                 </local:CryptoPanel>
-                
+                                
                 <StackPanel>  <!--TEST PANEL-->
                     <Button Click="btnTest_Click">
                         test.1

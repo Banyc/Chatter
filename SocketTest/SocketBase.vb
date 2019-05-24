@@ -25,7 +25,7 @@ Public MustInherit Class SocketBase
     Private _ip As IPAddress
     Private _port As Integer
 
-    Public IsOppositeStandby As Boolean
+    Public _IsOppositeStandby As Boolean
 
     Private _IsShutdown As Boolean = False
     Public Property IsShutdown As Boolean
@@ -96,7 +96,7 @@ Public MustInherit Class SocketBase
         _myMsgId = CUInt(rnd.Next())
         _othersMsgId = Nothing
 
-        IsOppositeStandby = False
+        _IsOppositeStandby = False
 
         CheckConnectLoop()
         ListenLoop()
@@ -197,6 +197,7 @@ Public MustInherit Class SocketBase
         _listenThread.Start()
     End Sub
 
+    ' check if the connection is off
     Private Sub CheckConnectLoop()
         _checkConnectThread = New Thread(
             Sub()
@@ -325,7 +326,7 @@ Public MustInherit Class SocketBase
 
             If cookedData.EndsWith(MessageTypeBody(MessageType.Standby)) Then  ' If it is a standby message
                 RaiseStandbyEventThread()
-                IsOppositeStandby = True
+                _IsOppositeStandby = True
             Else ' if it is a pure plain text
                 ' explicitly pop out a window for it is tranmitted without encrypted
                 Dim messageBoxThread As New Thread(Sub()
@@ -514,7 +515,7 @@ Public MustInherit Class SocketBase
 #Region "three-way-handshake"
     ' Actively build a tunnel
     Public Sub MakeEncryptTunnel(seed As Integer)
-        If IsOppositeStandby Then
+        If _IsOppositeStandby Then
             ' start the first handshake
             _AES = New AesApi(seed)
             SendTunnalRequest()
@@ -644,6 +645,10 @@ Public MustInherit Class SocketBase
         Else
             Return Nothing
         End If
+    End Function
+
+    Public Function IsOppositeStandby() As Boolean
+        Return _IsOppositeStandby
     End Function
 #End Region
 End Class

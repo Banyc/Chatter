@@ -92,6 +92,14 @@ Public Class ChatBox
                             scroll.ScrollToBottom()
                         End Sub)
     End Sub
+
+    Public Sub ClearAllText()
+        Me.Dispatcher.
+            BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                        Sub()
+                            txtMessage.Document.Blocks.Clear()
+                        End Sub)
+    End Sub
 #End Region
 
     Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
