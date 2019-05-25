@@ -57,6 +57,79 @@ Xaml
 
 ## Basic Principles
 
+### Inclusive relationship of classes
+
+- `MainWindow`
+  - `CryptoPanel` - init
+    - `SocketBase`
+  - `ChatBox` - init
+  - `SocketClient` - init
+    - `SocketBase` - init - base
+      - `AesApi` - init
+      - `RsaApi` - init
+  - `SocketListener` - init
+    - `SocketBase` - init - base
+      - ...
+  - `SocketBase`
+
+PS
+
+- If the class B has shown in the code of class A, then class A is said to be the upper class relative to class B.
+- the mark "init" indicates that the class with the mark initiates under its upper class
+- the mark "base" indicates that the class with the mark is the base class of its upper class
+- "..." indicates that the details have already shown above therefore omitted
+
+### Lifetime of the program
+
+In User-oriented order
+
+- When the program starts, it will require user to choose a role from being a server or being a client.
+  - when user has done choosing, the ip address and port of the server and the expected client address are not allowed to be changed.
+  - the socket object is then instantiated.
+    - if the user choose to be server, the class `SocketListener` will be instantiated.
+      - `SocketListener` is derived from `SocketBase`
+      - `SocketListener` only implements the initiation of a socket.
+        - Stopped when done connection
+    - if the user choose to be client, the class `SocketClient` will be instantiated
+      - `SocketClient` is derived from `SocketBase`
+      - `SocketClient` only implements the initiation of a socket.
+        - Stopped when done connection
+    - `SocketBase` deals with the lifetime of a socket after its connection
+- User then is needed to set up the **private key** and the **public key** properly.
+  - Conducted in class `SocketBase`
+  - public key should belong to the peer that the user wants to connect to.
+  - private key should belong to the user himself or herself
+  - those key pair is used to encrypt the session key
+  - the key pair here has been automatically generated through pseudo-randomization in the instantiation of the class `RsaApi`
+    - the class `RsaApi` has already instantiated in the constructor of `SocketBase`
+  - after setting up public key, the user can send "stand-by" signal to his peer.
+    - the act will give the right for his peer to generate a session key
+- Then the user can send "stand-by" signal to his peer.
+  - Conducted in class `SocketBase`
+  - the act will give the right for his peer to generate a session key
+- If the peer send in the "stand-by" signal, the user who received it should generate a session key.
+  - Conducted in class `SocketBase`
+  - session key generation is conducted in class `AesApi`
+    - class `AesApi` has been instantiated in `SocketBase` during the handshakes
+  - the details are illustrated below.
+- Who generating the session key launches the three-way handshake
+  - Conducted in class `SocketBase`
+  - the handshakes are aimed to exam the authenticity of both his peer and himself and to send the session key to the one who has sended "stand-by" signal.
+  - the details are illustrated below.
+- When the implementation done, the user and his peer can now chat in the chat box
+  - the login panel will collapsed and the chat panel will be visible.
+    - login panel includes the user control implemented in "CryptoPanel.xaml" and part of controls implemented in "MainWindow.xaml"
+    - chat panel is implemented in another user control "ChatBox.xaml"
+  - there are the receiving and sending processes
+    - Conducted in class `SocketBase`
+    - the receiving process is run in looping thread
+
+### Introduction to Socket
+
+Almost all implementation is in the class `SocketBase` which resides in "SocketBase.vb"
+
+... TODO
+
 ### Encryption
 
 Basic steps are shown in pseudo-code below
@@ -262,3 +335,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] change IV for each message. [IV can be made public](https://crypto.stackexchange.com/questions/3965/what-is-the-main-difference-between-a-key-an-iv-and-a-nonce)
 - [x] salting session key
 - [ ] Scan peers on the same Intranet
+- [ ] write documentations for each class
