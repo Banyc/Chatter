@@ -24,7 +24,7 @@
                              />  <!--message display--> <!--https://stackoverflow.com/questions/136435/any-way-to-make-a-wpf-textblock-selectable-->
             </ScrollViewer>
 
-            <TextBox Name="txtInput" TextWrapping="Wrap" AcceptsReturn="True" Grid.Row="1" MaxHeight="300" MinHeight="100" Height="Auto" VerticalScrollBarVisibility="Auto" Padding="8">  <!--Height="100"--> <!--input box-->
+            <TextBox Name="txtInput" TextWrapping="Wrap" AcceptsReturn="True" Grid.Row="1" MaxHeight="300" MinHeight="0" Height="Auto" VerticalScrollBarVisibility="Auto" Padding="8">  <!--Height="100"--> <!--input box-->
                
             </TextBox>
 

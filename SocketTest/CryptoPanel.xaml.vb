@@ -8,11 +8,13 @@
         btnSendSessionKey.IsEnabled = False
     End Sub
 
+    ' update current socket object
     Public Sub SetSocket(handler As SocketBase)
         _socket = handler
         seedStr = Nothing
     End Sub
 
+    ' returns the coordinate hashing value of a string
     Private Function GetHashValue(seedStr As String) As Integer
         If seedStr Is Nothing Then
             stateBanner.Text = "YOU FORGOT TO SET SEED!"
@@ -27,6 +29,7 @@
     End Function
 
 #Region "key manager"
+    ' request a path to save file
     Private Function GetSavePath() As String
         Dim exportFileDialog As New Microsoft.Win32.SaveFileDialog()
         If exportFileDialog.ShowDialog() Then
@@ -67,10 +70,12 @@
         End If
     End Function
 
+    ' update the private key
     Private Sub SetPriKey(keyContent As String)
         _socket.SetPrivateKey(keyContent)
     End Sub
 
+    ' update the public key
     Private Sub SetPubKey(keyContent As String)
         _socket.SetPublicKey(keyContent)
         stateBanner.Text = "Public key loaded. Ready to send session key."
@@ -125,6 +130,7 @@
 #End Region
 
 #Region "File Drop on panel"
+    ' this user drop a file on `Me`
     Private Sub CryptoPanel_Drop(sender As Object, e As DragEventArgs)
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
@@ -132,6 +138,7 @@
         End If
     End Sub
 
+    ' extract keys from the files and update them to the container
     Private Sub SetKeysFromFile(files As String())
         For Each file In files
             Dim keyContent As String = IO.File.ReadAllText(file)

@@ -35,7 +35,7 @@
                             Expected Client Address: 
                         </TextBlock>
                         <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
-                            <TextBox Name="txtExpectedIpAddress">
+                            <TextBox Name="txtExpectedIpAddress" MinWidth="10">
                                 
                             </TextBox>
                             <TextBlock Text=": "/>

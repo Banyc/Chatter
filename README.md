@@ -48,6 +48,7 @@ Class
 - "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
 - "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
 - "SocketManager.vb" - pending for releasing some code from "SocketBase.vb"
+- "FlashWindow.vb" - shared class handling the flashing icon in task-bar
 
 Xaml
 
@@ -71,12 +72,14 @@ Xaml
     - `SocketBase` - init - base
       - ...
   - `SocketBase`
+  - `FlashWindow` - shared
 
 PS
 
 - If the class B has shown in the code of class A, then class A is said to be the upper class relative to class B.
 - the mark "init" indicates that the class with the mark initiates under its upper class
 - the mark "base" indicates that the class with the mark is the base class of its upper class
+- the mark "shared" indicates that the class with the mark is used only by its shared functions
 - "..." indicates that the details have already shown above therefore omitted
 
 ### Lifetime of the program
