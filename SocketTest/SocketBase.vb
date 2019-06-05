@@ -365,14 +365,26 @@ Public MustInherit Class SocketBase
             Try
                 Dim bytesRec As Integer = handler.Receive(bytes)
 
-                DistributeReceivedMessage(bytesRec, bytes)
+                If bytesRec > 0 Then  ' sometimes it will receive an empty msg
+                    DistributeReceivedMessage(bytesRec, bytes)
+                End If
 
                 'Exit While
                 'End If
-            Catch ex As Exception
+#If Not DEBUG Then
+            Catch ex As SocketException
+#End If
+
+            Catch ex As ThreadAbortException
                 'MessageBox.Show(ex.ToString(), _socketCS.ToString())  ' TODO: comment out this
                 Shutdown()
                 'Exit While
+
+#If Not DEBUG Then
+            Catch ex As Exception
+                MessageBox.Show(ex.ToString(), _socketCS.ToString())
+                Shutdown()
+#End If
             End Try
             'End While
         End If
@@ -421,10 +433,13 @@ Public MustInherit Class SocketBase
                 If _listenThread.IsAlive Then
                     Try
                         _listenThread.Abort()  ' the side effect is to cause error
-                    Catch ex As Exception
+                    Catch ex As ThreadAbortException
 #If DEBUG Then
                         MessageBox.Show(ex.ToString())
 #End If
+                    Catch ex As Exception
+                        MessageBox.Show(ex.ToString())
+
                     End Try
                 End If
             End If
