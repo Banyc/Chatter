@@ -30,7 +30,7 @@
 
 #Region "key manager"
     ' request a path to save file
-    Private Function GetSavePath() As String
+    Private Shared Function GetSavePath() As String
         Dim exportFileDialog As New Microsoft.Win32.SaveFileDialog()
         If exportFileDialog.ShowDialog() Then
             Dim fileName As String = exportFileDialog.FileName
@@ -60,7 +60,7 @@
         End If
     End Sub
 
-    Private Function GetReadPath()
+    Private Shared Function GetReadPath()
         Dim importFileDialog As New Microsoft.Win32.OpenFileDialog()
         If importFileDialog.ShowDialog() Then
             Dim fileName = importFileDialog.FileName

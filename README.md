@@ -131,7 +131,15 @@ In User-oriented order
 
 Almost all implementation is in the class `SocketBase` which resides in "SocketBase.vb"
 
-... TODO
+#### Message Framing
+
+"There is no way to send a packet of data over TCP; that function call does not exist. Rather, there are two streams in a TCP connection: an incoming stream and an outgoing stream. One may read from the incoming stream by calling a "receive" method, and one may write to the outgoing stream by calling a "send" method. If one side calls "send" to send 5 bytes, and then calls "send" to send 5 more bytes, then there are 10 bytes that are placed in the outgoing stream. The receiving side may decide to read them one at a time from its receiving stream if it so wishes (calling "receive" 10 times), or it may wait for all 10 bytes to arrive and then read them all at once with a single call to "receive"."
+
+ref - <https://www.codeproject.com/Articles/37496/TCP-IP-Protocol-Design-Message-Framing>
+
+#### ...
+
+TODO...
 
 ### Encryption
 
