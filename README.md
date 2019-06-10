@@ -280,33 +280,72 @@ The final hashing return will be the session key.
 
 ### Message Format
 
-#### Cipher message
+Hierarchy of Message
 
-- plain text - `<ID>112</ID><TEXT>this is a text</TEXT><EOF/>`
+- `MessagePackage` (etc. Message)
+  - `AesContentPackage` (etc. Content) - content that is encrypted thru AES
 
-- cipher text - denoted as `[c]`, which is stored in byte array `As Byte()`, encrypted from the plain text
+`MessagePackage`
+
+- `Kind`
+  - `PlaintextSignal`
+  - `Cipher`
+  - `Plaintext`
+  - `EncryptedSessionKey`
+- `Content` - Depends on what specific kind of message is
+
+`Content` type
+
+- `Enum` - For PlaintextSignal
+- `Byte()` - For Cipher and EncryptedSessionKey - Byte-ization of `AesContentPackage`
+- `Text` - For Plaintext
+
+`AesContentPackage`
+
+- `Kind`
+  - `Text`
+  - `Image`  ' TODO
+  - `Feedback`
+
+TODO: explain different derived class under `AesContentPackage`
+
+#### Cipher Content
+
+- Denote arbitrary integer as `[int]`, arbitrary text as `[text]`
+
+- plain text - `{"$type":"SocketTest.AesTextPackage, SocketTest","MessageID":[int],"Text":"[text]","Kind":0}`
+
+- cipher content - denoted as `[c]`, which is stored in byte array `As Byte()`, encrypted from `AesContentPackage`
 
 - IV - denoted as `[IV]`, which is stored in byte array `As Byte()`
 
-- send-out package - `[IV][c]`
+- send-out package - `{"$type":"SocketTest.CipherMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[IV][c]"},"Kind":1}`
 
 #### Plain-text message
 
-- plain text - `<ID>112</ID><TEXT>this is a text</TEXT><EOF/>`
+- plaintext - JSON expression unknown
 
 #### Feedback message
 
-- plain text - `<ID>112</ID><FB/><EOF/>`
+- Denote arbitrary integer as `[int]`
 
-- remaining process goes to "cipher message" part
+- plaintext - `{"$type":"SocketTest.AesFeedbackPackage, SocketTest","MessageID":[int],"Kind":2}`
+
+- remaining process goes to "cipher Content" part
+
+- encrypted content denotes as `[c]`
+
+- `{"$type":"SocketTest.CipherMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[c]"},"Kind":1}`
 
 #### Standby message
 
-- `<STANDBY/><EOF/>`
+- `{"$type":"SocketTest.PlaintextSignalMessagePackage, SocketTest","Content":0,"Kind":0}`
 
 #### Handshake message
 
-- encrypted session key - stored in byte array `As Byte()`
+- encrypted session key - stored in byte array `As Byte()` - denote as `[sK]`
+
+- `{"$type":"SocketTest.EncryptedSessionKeyMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[sK]"},"Kind":3}`
 
 ### Feedback system
 
@@ -347,3 +386,5 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] salting session key
 - [ ] Scan peers on the same Intranet
 - [ ] write documentations for each class
+- [x] Ensure integrity of each message in Application Layer assuming no package loss
+- [ ] Deal with package loss

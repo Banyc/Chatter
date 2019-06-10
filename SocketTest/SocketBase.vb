@@ -11,6 +11,7 @@ End Enum
 
 
 Public MustInherit Class SocketBase
+#Region "Event Declaration"
     Public Event ReceiveText()
     Public Event Connected()
     Public Event OpppsiteStandby()
@@ -19,7 +20,9 @@ Public MustInherit Class SocketBase
     Public Event Encrypted()
     Public Event ReceivedFeedBack(myText As String)
     Public Event Disconnected()
+#End Region
 
+#Region "Variables Decl"
     Public ReadOnly Property EndPointType As SocketCS
 
     Private _ip As IPAddress
@@ -53,9 +56,6 @@ Public MustInherit Class SocketBase
     Private _checkConnectThread As Thread
     Private _encryptionStepThread As Thread
 
-    ' Incoming data from the client.
-    Private _dataStr As String = Nothing
-
     ' checks the integrity and authenticity of the incoming message
     ' against replay attack
     Private _myMsgId As UInteger
@@ -76,7 +76,10 @@ Public MustInherit Class SocketBase
 
     Private _RSA As RsaApi
     Private _AES As AesApi
+    Private WithEvents _messageFramer As MessageFraming
+#End Region
 
+#Region "Contructor"
     Protected Sub New(ipStr As String, port As Integer, socketCS As SocketCS)
         Me.New(IPAddress.Parse(ipStr), port, socketCS)
     End Sub
@@ -98,78 +101,89 @@ Public MustInherit Class SocketBase
 
         _IsOppositeStandby = False
 
+        _messageFramer = New MessageFraming()
+
         CheckConnectLoop()
         ListenLoop()
     End Sub
+#End Region
 
+#Region "MustOverride"
     Public MustOverride Sub Start()
+#End Region
 
 #Region "on transmission / send"
-    ' Public entrance to send text
-    Public Sub SendText(plainText As String)
-        _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
-
-        SendText(plainText, _myMsgId)
+    Public Sub SendSessionKey(encryptedSessionKey As Byte())
+        Dim msgBytes As Byte() = MessageFraming.SendEncryptedSessionKey(encryptedSessionKey)
+        _SendBytes(_handler, msgBytes)
     End Sub
 
-    Private Sub SendText(plainText As String, id As Integer)
-        Dim compasser As String
-        compasser = MessageTypeStart(MessageType.ID) & Str(id) & MessageTypeEnd(MessageType.ID) &
-                    MessageTypeStart(MessageType.Text) & plainText & MessageTypeEnd(MessageType.Text)
+    ' Public entrance to send text
+    Public Sub SendCipherText(plainText As String)
+        _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
+
+        SendCipherText(plainText, _myMsgId)
+    End Sub
+
+    Private Sub SendCipherText(plainText As String, id As Integer)
+        Dim contentPack = New AesTextPackage()
+        contentPack.MessageID = id
+        contentPack.Text = plainText
+
+        Dim unencryptedJson As String = AesContentFraming.GetJsonString(contentPack)
 
         _msgNotComfirmedList.Add(id, plainText)
-        Send(_handler, compasser)
+        _SendCipherPackage(_handler, unencryptedJson)
     End Sub
 
     ' in plain text
     Private Sub SendStandbyMsg()
-        Send(_handler, MessageTypeBody(MessageType.Standby))
+        Dim msgBytes As Byte() = MessageFraming.SendStandby()
+        _SendBytes(_handler, msgBytes)
     End Sub
 
-    ' send plain or encrypted message
-    Private Sub Send(handler As Socket, msgStr As String)
+    ' send AesTextPackage in JSON form
+    Private Sub _SendCipherPackage(sock As Socket, unencryptedJson As String)
 
         If _encryptDone.WaitOne(0) Then  ' send cipher text
-            Dim msgBytes As Byte()
+            Dim contentBytes As Byte()
 
             ' updates new IV
             Dim bIv As Byte() = _AES.GetNewIV()
             _AES.SetIV(bIv)
 
             ' Encrypt the data
-            msgBytes = _AES.EncryptMsg(msgStr & MessageTypeBody(MessageType.ENDOFSTREAM))
+            contentBytes = _AES.EncryptMsg(unencryptedJson)
 
             ' prepend IV to cipher text
             Dim packet As Byte()
-            packet = bIv.Concat(msgBytes).ToArray()
+            packet = bIv.Concat(contentBytes).ToArray()
 
-            ' Encrypted data cannot attach anything
-            SendBytes(handler, packet)
+            Dim msgBytes As Byte() = MessageFraming.SendCipher(packet)
 
-        Else  ' send plain text without encrypting it
-            ' Encode the data string into a byte array.
-            'Dim msg As Byte() = Encoding.ASCII.GetBytes(msgStr & ENDOFSTREAM)
-            Dim msg As Byte() = Encoding.UTF8.GetBytes(msgStr & MessageTypeBody(MessageType.ENDOFSTREAM))
-            _Send(handler, msg)
+            ' Send the MessagePackage in bytes form
+            _SendBytes(sock, msgBytes)
+        Else
+            ' TODO: throw ERROR that the encrypted tunnel has not been built!!!
         End If
+    End Sub
 
+    Private Sub SendPlaintextMessage(sock As Socket, plaintext As String)
+        Dim msgBytes As Byte() = MessageFraming.SendPlaintext(plaintext)
+        _SendBytes(sock, msgBytes)
     End Sub
 
     ' send session key or encrypted message without attaching anything
-    Private Sub SendBytes(handler As Socket, msgByte As Byte())
-        _Send(handler, msgByte)
-    End Sub
-
     ' Basic function for all "send"s
-    Private Sub _Send(handler As Socket, msgAttached As Byte())
+    Private Sub _SendBytes(sock As Socket, msgAttached As Byte())
         'If Not handler Is Nothing And handler.Connected Then
-        If Not handler Is Nothing Then
-            If handler.Connected Then
+        If Not sock Is Nothing Then
+            If sock.Connected Then
                 Dim thread As New Thread(
                         Sub()
                             _connectDone.WaitOne()
                             ' Send the data through the socket.
-                            Dim bytesSent As Integer = handler.Send(msgAttached)
+                            Dim bytesSent As Integer = sock.Send(msgAttached)
                             thread.Abort()
                         End Sub)
                 thread.Start()
@@ -240,118 +254,6 @@ Public MustInherit Class SocketBase
         eventThread.Start()
     End Sub
 
-    ' extract text or signals from the formatted transmitting msg
-    Private Sub AsyncParsePlainMsg(plainMsg As String)
-        Dim thread As New Thread(Sub()
-                                     Dim text As String
-                                     Dim msgID As UInteger
-
-                                     If plainMsg.IndexOf(MessageTypeStart(MessageType.Text)) >= 0 Then  ' it is a text message
-                                         text = GetCertainContent(plainMsg, MessageType.Text)
-                                         msgID = Int(GetCertainContent(plainMsg, MessageType.ID))
-
-                                         ' checks the integrity and authenticity of the incoming message
-                                         If _othersMsgId = Nothing Then  ' update other's message id
-                                             _othersMsgId = msgID
-                                         Else
-                                             Dim incrementedId As UInteger
-                                             incrementedId = UIntIncrement(_othersMsgId)
-                                             If incrementedId <> msgID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
-                                                 MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
-                                                 thread.Abort()
-                                                 Exit Sub
-                                             End If
-                                             _othersMsgId = incrementedId
-                                         End If
-
-                                         SendFeedback(msgID)  ' send feedback to the sender
-
-                                         _msgReceivedQueue.Enqueue(text)
-                                         RaiseReceivedEventThread()  ' message waiting for being read
-                                     ElseIf plainMsg.IndexOf(MessageTypeBody(MessageType.FeedBack)) >= 0 Then ' it is a feedback
-                                         msgID = Int(GetCertainContent(plainMsg, MessageType.ID))
-                                         ReceiveFeedback(msgID)
-                                     Else
-                                         ' do nothing
-                                     End If
-
-
-                                     thread.Abort()
-                                 End Sub)
-        thread.Start()
-    End Sub
-
-    ' distribute the received transmitting msg to other spec functions for further operation and explanation
-    Private Sub DistributeReceivedMessage(bytesRec As Integer, bytes As Byte())
-        _dataStr += Encoding.UTF8.GetString(bytes, 0, bytesRec)  ' try to get plain text
-
-        Dim cookedData As String  ' plain text without "<EOF>"
-
-        ' Enqueue all the stuff received below
-        If _encryptDone.WaitOne(0) Then ' if the encryption is done
-            ' :: decrypt message ::
-
-            ' extract IV and cipher text
-            Dim iV As Byte()
-            iV = bytes.Take(_AES.GetIvSize() / 8).ToArray()
-            Dim cipher As Byte()
-            cipher = bytes.Skip(_AES.GetIvSize() / 8).Take(bytesRec - _AES.GetIvSize() / 8).ToArray()
-
-            ' updates IV
-            _AES.SetIV(iV)
-
-            ' decrypt message
-            _dataStr = _AES.DecryptMsg(cipher)
-
-            ' :: End Decryption ::
-
-            ' clears out "<EOF>" attachment
-            Dim lengthMsg As Integer
-            lengthMsg = _dataStr.LastIndexOf(MessageTypeBody(MessageType.ENDOFSTREAM)) + 1
-            cookedData = _dataStr.Substring(0, lengthMsg - 1)
-
-            ' further parses the decrypted data
-            AsyncParsePlainMsg(cookedData)
-
-            'MessageBox.Show(cookedData, _socketCS.ToString() & " received msg")
-            _dataStr = Nothing
-
-        ElseIf _dataStr.EndsWith(MessageTypeBody(MessageType.ENDOFSTREAM)) Then ' if data was not encrypted
-            cookedData = _dataStr.Substring(0, _dataStr.Length - MessageTypeBody(MessageType.ENDOFSTREAM).Length)  ' not allow plain text anymore, which will be considered as encrypted message  ' TODO: disdinguish plain text and encrypted message since plain text attaches "<EOF>"
-            '_msgReceivedQueue.Enqueue(cookedData)
-
-            'MessageBox.Show(cookedData, _socketCS.ToString() & " received msg")
-            _dataStr = Nothing
-
-
-            If cookedData.EndsWith(MessageTypeBody(MessageType.Standby)) Then  ' If it is a standby message
-                RaiseStandbyEventThread()
-                _IsOppositeStandby = True
-            Else ' if it is a pure plain text
-                ' explicitly pop out a window for it is tranmitted without encrypted
-                Dim messageBoxThread As New Thread(Sub()
-                                                       'MessageBox.Show(_msgReceivedQueue.Dequeue(), "[RECEIVED] PLAIN TEXT NOT SAFE")
-                                                       MessageBox.Show(cookedData, "[RECEIVED] PLAIN TEXT NOT SAFE")
-                                                       messageBoxThread.Abort()
-                                                   End Sub)
-                messageBoxThread.Start()
-            End If
-
-        Else ' if it is a encryted key to be exchanged
-            ' the size of the byte() must be the multiple of 16?
-            Dim encryptedSessionKey(bytesRec - 1) As Byte
-
-            Array.Copy(bytes, encryptedSessionKey, encryptedSessionKey.Length)
-            _byteQueue.Enqueue(encryptedSessionKey)  ' stores encrypted session key and IV
-
-
-            ' When the queue received encrypted session key and IV
-            If _byteQueue.Count >= 2 Then
-                ReceiveTunnalRequest(_byteQueue.Dequeue(), _byteQueue.Dequeue())
-            End If
-        End If
-    End Sub
-
     ' Should be run in thread
     Private Sub Receive(handler As Socket)
 
@@ -365,9 +267,9 @@ Public MustInherit Class SocketBase
             Try
                 Dim bytesRec As Integer = handler.Receive(bytes)
 
-                If bytesRec > 0 Then  ' sometimes it will receive an empty msg
-                    DistributeReceivedMessage(bytesRec, bytes)
-                End If
+                ' shorten the bytes array
+                bytes = bytes.Take(bytesRec).ToArray()
+                _messageFramer.DecodeMsgFrame(bytes)
 
                 'Exit While
                 'End If
@@ -389,6 +291,97 @@ Public MustInherit Class SocketBase
             'End While
         End If
 
+    End Sub
+
+    Private Sub ReceivedCipher(bytes As Byte()) Handles _messageFramer.ReceivedCipher
+        If _encryptDone.WaitOne(0) Then ' if the key exchange process is done; the message is now encrypted by AES
+            ' :: decrypt message ::
+
+            ' extract IV and cipher text
+            Dim iV As Byte()
+            iV = bytes.Take(_AES.GetIvSize() / 8).ToArray()
+            Dim cipher As Byte()
+            cipher = bytes.Skip(_AES.GetIvSize() / 8).Take(bytes.Length - _AES.GetIvSize() / 8).ToArray()
+
+            ' updates IV
+            _AES.SetIV(iV)
+
+            ' decrypt message
+            Dim decryptedContent As String
+            decryptedContent = _AES.DecryptMsg(cipher)
+
+            ' :: End Decryption ::
+
+
+            ' Parse Content body
+            Dim contentPack As AesContentPackage
+            contentPack = AesContentFraming.GetAesContentPackage(decryptedContent)
+
+            ' Handle each kind of content previously encrypted by AES
+            Select Case contentPack.Kind
+                Case AesContentKind.Text
+                    Dim textPack As AesTextPackage = contentPack
+                    ' checks the integrity and authenticity of the incoming message
+                    If _othersMsgId = Nothing Then  ' update other's message id
+                        _othersMsgId = textPack.MessageID
+                    Else
+                        Dim incrementedId As UInteger
+                        incrementedId = UIntIncrement(_othersMsgId)
+                        If incrementedId <> textPack.MessageID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
+                            MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
+                            Exit Sub
+                        End If
+                        _othersMsgId = incrementedId
+                    End If
+
+                    SendFeedback(textPack.MessageID)  ' send feedback to the sender
+
+                    _msgReceivedQueue.Enqueue(textPack.Text)
+                    RaiseReceivedEventThread()  ' message waiting for being read
+                Case AesContentKind.Feedback
+                    Dim feedbackPack As AesFeedbackPackage = contentPack
+                    ReceiveFeedback(feedbackPack.MessageID)
+            End Select
+
+        Else ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
+            ' TODO: ERROR
+        End If
+    End Sub
+    Private Sub ReceivedPlaintext(text As String) Handles _messageFramer.ReceivedPlaintext
+        ' explicitly pop out a window for it is tranmitted without encrypted
+        Dim messageBoxThread As New Thread(Sub()
+                                               'MessageBox.Show(_msgReceivedQueue.Dequeue(), "[RECEIVED] PLAIN TEXT NOT SAFE")
+                                               MessageBox.Show(text, "[RECEIVED] PLAIN TEXT NOT SAFE")
+                                               messageBoxThread.Abort()
+                                           End Sub)
+        messageBoxThread.Start()
+    End Sub
+    Private Sub ReceivedPlaintextSignal(signal As MessagePlaintextSignal) Handles _messageFramer.ReceivedPlaintextSignal
+        Select Case signal
+            Case MessagePlaintextSignal.Standby
+                RaiseStandbyEventThread()
+                _IsOppositeStandby = True
+        End Select
+    End Sub
+
+    Private Sub ReceivedEncryptedSessionKey(encryptedSessionKey As Byte()) Handles _messageFramer.ReceivedEncryptedSessionKey
+        If Not _encryptDone.WaitOne(0) Then ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
+
+            '' the size of the byte() must be the multiple of 16?
+            'Dim encryptedSessionKey(bytes.Length - 1) As Byte
+
+            'Array.Copy(bytes, encryptedSessionKey, encryptedSessionKey.Length)
+
+            _byteQueue.Enqueue(encryptedSessionKey)  ' stores encrypted session key and IV
+
+
+            ' When the queue received encrypted session key and IV
+            If _byteQueue.Count >= 2 Then
+                ReceiveTunnalRequest(_byteQueue.Dequeue(), _byteQueue.Dequeue())
+            End If
+        Else
+            ' TODO: ERROR
+        End If
     End Sub
 #End Region
 
@@ -583,10 +576,10 @@ Public MustInherit Class SocketBase
             ' encrypt session key
             Dim encryptedKey As Byte() = _RSA.EncryptMsg(IncrementBytes(_AES.GetSessionKey(), _handshakeTimes))
             ' send encrypted session key
-            SendBytes(_handler, encryptedKey)
+            SendSessionKey(encryptedKey)
 
             Dim encryptedIV As Byte() = _RSA.EncryptMsg(IncrementBytes(_AES.GetIV(), _handshakeTimes))
-            SendBytes(_handler, encryptedIV)
+            SendSessionKey(encryptedIV)
 
         End If
 
@@ -608,12 +601,18 @@ Public MustInherit Class SocketBase
         _msgNotComfirmedList.Remove(msgID)
     End Sub
 
+    ' TODO
     Private Sub SendFeedback(msgID As Integer)
         Dim compasser As String
         compasser = MessageTypeStart(MessageType.ID) & msgID & MessageTypeEnd(MessageType.ID) &
             MessageTypeBody(MessageType.FeedBack)
 
-        Send(_handler, compasser)
+        Dim contentPack = New AesFeedbackPackage()
+        contentPack.MessageID = msgID
+
+        Dim json As String = AesContentFraming.GetJsonString(contentPack)
+
+        _SendCipherPackage(_handler, json)
     End Sub
 #End Region
 

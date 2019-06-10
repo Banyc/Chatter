@@ -130,7 +130,7 @@ Class MainWindow
 
     Private Sub Send(msgStr As String)
         If Not _socket Is Nothing Then
-            _socket.SendText(msgStr)
+            _socket.SendCipherText(msgStr)
         End If
     End Sub
 

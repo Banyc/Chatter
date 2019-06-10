@@ -67,6 +67,9 @@
     <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -87,6 +90,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AesApi.vb" />
+    <Compile Include="AesContentFraming.vb" />
     <Compile Include="ChatBox.xaml.vb">
       <DependentUpon>ChatBox.xaml</DependentUpon>
     </Compile>
@@ -95,6 +99,7 @@
     </Compile>
     <Compile Include="FlashWindow.vb" />
     <Compile Include="RsaApi.vb" />
+    <Compile Include="MessageFraming.vb" />
     <Compile Include="SocketBase.vb" />
     <Compile Include="SocketClient.vb" />
     <Compile Include="SocketListener.vb" />
@@ -166,6 +171,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

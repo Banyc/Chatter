@@ -3,6 +3,16 @@
 
 Imports System.Security.Cryptography
 
+Public Class RsaDecryptionException
+    Inherits System.Exception
+    Public Sub New()
+        MyBase.New()
+    End Sub
+    Public Sub New(ByVal message As String)
+        MyBase.New(message)
+    End Sub
+End Class
+
 Public Class RsaApi
 
     'Private _csp As RSACryptoServiceProvider
@@ -55,7 +65,11 @@ Public Class RsaApi
         Return _pub.Encrypt(data, False)
     End Function
     Public Function DecryptMsg(data As Byte()) As Byte()
-        Return _pri.Decrypt(data, False)
+        Try
+            Return _pri.Decrypt(data, False)
+        Catch ex As Exception
+            Throw New RsaDecryptionException("Using wrong RSA key pair? Try to check the correctness of those key pair you set.")
+        End Try
     End Function
 #End Region
 
