@@ -6,6 +6,7 @@ Public Enum AesContentKind
     Feedback
 End Enum
 
+#Region "Serial Classes"
 Public MustInherit Class AesContentPackage
     Public Property Kind As AesContentKind
 End Class
@@ -26,8 +27,12 @@ Public Class AesTextPackage
         Kind = AesContentKind.Text
     End Sub
 End Class
+#End Region
 
 Public Class AesContentFraming
+    Private Sub New()
+        ' Preventing the class from being instantiated
+    End Sub
 #Region "On Sending"
     Public Shared Function GetJsonString(AesContentPackage As AesContentPackage) As String
         ' Set identifier for json

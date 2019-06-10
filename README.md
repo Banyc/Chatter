@@ -377,7 +377,7 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] encrypt the message
 - [x] check if the opposite received the key
 - [x] check if the opposite received the message
-- [ ] break the limit of the length of each message
+- [x] break the limit of the length of each message
 - [ ] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session

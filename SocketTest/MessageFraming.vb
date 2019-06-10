@@ -4,6 +4,15 @@
 
 Imports Newtonsoft.Json
 
+Public Class SeeminglyDosAttackException : Inherits Exception
+    Public Sub New()
+        MyBase.New()
+    End Sub
+    Public Sub New(message As String)
+        MyBase.New(message)
+    End Sub
+End Class
+
 ' Serializer
 
 ' key-value types:
@@ -26,6 +35,7 @@ Public Enum MessagePlaintextSignal
     Standby
 End Enum
 
+#Region "Serial Classes"
 Friend MustInherit Class MessagePackage
     Public Property Kind As MessageKind
     'Public MustOverride Property Content
@@ -60,7 +70,7 @@ Friend Class EncryptedSessionKeyMessagePackage
         Kind = MessageKind.EncryptedSessionKey
     End Sub
 End Class
-
+#End Region
 
 Public Class MessageFraming
     Event ReceivedMessage(kind As MessageKind, content As Byte())
@@ -90,10 +100,10 @@ Public Class MessageFraming
         lenPrefix = BitConverter.GetBytes(length)
 
         ' prepend the 4-bit int32 to the buffer
-        Dim newBuffer As Byte()
-        newBuffer = lenPrefix.Concat(buffer).ToArray()
+        Dim newStream As Byte()
+        newStream = lenPrefix.Concat(buffer).ToArray()
 
-        Return newBuffer
+        Return newStream
     End Function
     Private Shared Function GetMsgFrame(msgPack As MessagePackage) As Byte()
         ' Set identifier for json - ref - <https://christianarg.wordpress.com/2012/11/06/serializing-and-deserializing-inherited-types-with-json-anything-you-want/>
@@ -108,32 +118,51 @@ Public Class MessageFraming
 #End Region
 
 #Region "Receivng"
-    Private _oldBuffer As Byte()
+    Private _oldStream As Byte()
     Private _inMsgBytesQueue As Queue(Of Byte())
-    Public Sub DecodeMsgFrame(newBuffer As Byte())  ' TODO: review the code structure
-        If _oldBuffer Is Nothing Then
-            _oldBuffer = newBuffer
+
+    ' Involving Events raising
+    Public Sub DecodeMsgFrame(newStream As Byte())  ' TODO: review the code structure
+        ' concat the old buffer and the new one
+        If _oldStream Is Nothing Then
+            _oldStream = newStream
         Else
-            _oldBuffer = _oldBuffer.Concat(newBuffer).ToArray()
+            _oldStream = _oldStream.Concat(newStream).ToArray()
         End If
-        If _oldBuffer.Length < 4 Then
+
+        ' read the 4-bit prefix int32
+        If _oldStream.Length < 4 Then
             Exit Sub
         Else
-            Dim length As Int32 = BitConverter.ToInt32(_oldBuffer, 0)
+            ' read the length of the remaining message
+            Dim length As Int32 = BitConverter.ToInt32(_oldStream, 0)
 
-            While Not _oldBuffer Is Nothing And _oldBuffer.Length >= length + 4
-                Dim realBuffer As Byte() = _oldBuffer.Skip(4).Take(length).ToArray()
-                _inMsgBytesQueue.Enqueue(realBuffer)
-                _oldBuffer = _oldBuffer.Skip(4 + length).Take(_oldBuffer.Length - length - 4).ToArray()
+            ' handle the seemingly DOS attack
+            If length > 1024 * 1024 * 5 Then
+                If MessageBox.Show(String.Format("The length of the incoming message is {0} bits. Do you want to continue receiving the message?", length.ToString()), "Warning", MessageBoxButton.YesNo) = MessageBoxResult.No Then
+                    Throw New SeeminglyDosAttackException(String.Format("The length of the incoming message is {0} bits", length.ToString()))
+                End If
+            End If
 
-                If _oldBuffer Is Nothing Or _oldBuffer.Length < 4 Then
+            ' split as many messages to the queue as possible
+            While Not _oldStream Is Nothing And _oldStream.Length >= length + 4
+                ' discard the 4-bit prefix at the head of the stream
+                ' to get a single message from the old stream
+                Dim streamMsgBody As Byte() = _oldStream.Skip(4).Take(length).ToArray()
+
+                _inMsgBytesQueue.Enqueue(streamMsgBody)
+                _oldStream = _oldStream.Skip(4 + length).Take(_oldStream.Length - length - 4).ToArray()
+
+                ' update the `length` info from the remaining stream
+                If _oldStream Is Nothing Or _oldStream.Length < 4 Then
                     Exit While
                 Else
-                    length = BitConverter.ToInt32(_oldBuffer, 0)
+                    length = BitConverter.ToInt32(_oldStream, 0)
                 End If
             End While
         End If
 
+        ' further handle each message in the queue
         DecodeMessageBytes()
     End Sub
 #End Region
@@ -172,6 +201,7 @@ Public Class MessageFraming
 
 #Region "Receive"
     Private Sub DecodeMessageBytes()
+        ' Decode all bytes received in the queue
         While (_inMsgBytesQueue.Any())
             Dim jsonStr As String
             jsonStr = System.Text.Encoding.UTF8.GetString(_inMsgBytesQueue.Dequeue())
