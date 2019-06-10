@@ -18,8 +18,9 @@ Public MustInherit Class SocketBase
     Public Event SendedSessionKey()
     Public Event ReceivedSessionKey()
     Public Event Encrypted()
-    Public Event ReceivedFeedBack(myText As String)
+    Public Event ReceivedFeedBack(contentPackage As AesContentPackage)
     Public Event Disconnected()
+    Public Event ReceivedFile(fileBytes As Byte(), fileName As String)
 #End Region
 
 #Region "Variables Decl"
@@ -62,7 +63,7 @@ Public MustInherit Class SocketBase
     Private _othersMsgId As UInteger
 
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
-    Private _msgNotComfirmedList As Dictionary(Of Integer, String)  ' stores sended messages  ' msgID : msgText
+    Private _msgNotComfirmedList As Dictionary(Of Integer, AesContentPackage)  ' stores sended messages  ' msgID : msgPackage
     'Private _msgOnScreen As List(Of String)
     Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted session key and IV, which are still bytes
 
@@ -87,7 +88,7 @@ Public MustInherit Class SocketBase
         _ip = ip
         _port = port
         EndPointType = socketCS
-        _msgNotComfirmedList = New Dictionary(Of Integer, String)
+        _msgNotComfirmedList = New Dictionary(Of Integer, AesContentPackage)
         _msgReceivedQueue = New Queue(Of String)
         _byteQueue = New Queue(Of Byte())
         _socketCS = socketCS
@@ -118,11 +119,37 @@ Public MustInherit Class SocketBase
         _SendBytes(_handler, msgBytes)
     End Sub
 
+    Public Sub SendFile(fileBytes As Byte(), fileName As String)
+        Dim contentPack = New AesFilePackage()
+        contentPack.FileBytes = fileBytes
+        contentPack.Name = fileName
+
+        SendCipher(contentPack)
+    End Sub
+
     ' Public entrance to send text
     Public Sub SendCipherText(plainText As String)
         _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
 
         SendCipherText(plainText, _myMsgId)
+    End Sub
+
+    ' GENERAL METHOD
+    ' NOTE: DOES NOT NEED TO UPDATE `.MessageID` of `aesPack`
+    Public Sub SendCipher(aesPack As AesContentPackage)
+        ' updates msg ID
+        _myMsgId = UIntIncrement(_myMsgId)
+
+        ' update msg ID
+        aesPack.MessageID = _myMsgId
+
+        ' save the outing message for later examine if the opposite indeed received it
+        _msgNotComfirmedList.Add(aesPack.MessageID, aesPack)
+
+        ' Serialize Object into string
+        Dim unencryptedJson As String = AesContentFraming.GetJsonString(aesPack)
+
+        _SendCipherPackage(_handler, unencryptedJson)
     End Sub
 
     Private Sub SendCipherText(plainText As String, id As Integer)
@@ -132,7 +159,7 @@ Public MustInherit Class SocketBase
 
         Dim unencryptedJson As String = AesContentFraming.GetJsonString(contentPack)
 
-        _msgNotComfirmedList.Add(id, plainText)
+        _msgNotComfirmedList.Add(id, contentPack)
         _SendCipherPackage(_handler, unencryptedJson)
     End Sub
 
@@ -142,6 +169,7 @@ Public MustInherit Class SocketBase
         _SendBytes(_handler, msgBytes)
     End Sub
 
+    ' GENERAL METHOD
     ' send AesTextPackage in JSON form
     Private Sub _SendCipherPackage(sock As Socket, unencryptedJson As String)
 
@@ -175,6 +203,7 @@ Public MustInherit Class SocketBase
 
     ' send session key or encrypted message without attaching anything
     ' Basic function for all "send"s
+    ' GENERAL METHOD
     Private Sub _SendBytes(sock As Socket, msgAttached As Byte())
         'If Not handler Is Nothing And handler.Connected Then
         If Not sock Is Nothing Then
@@ -259,29 +288,28 @@ Public MustInherit Class SocketBase
 
         If Not handler Is Nothing Then
             ' Data buffer for incoming data.
-            Dim bytes() As Byte = New [Byte](1024 - 1) {}
-            '_dataStr = Nothing
+            Dim bytes() As Byte = New [Byte](262144 - 1) {}  ' 256K
 
             ' An incoming connection needs to be processed.
-            'While True
             Try
                 Dim bytesRec As Integer = handler.Receive(bytes)
 
                 ' shorten the bytes array
                 bytes = bytes.Take(bytesRec).ToArray()
+
+                ' decode the incoming stream
                 _messageFramer.DecodeMsgFrame(bytes)
 
-                'Exit While
-                'End If
 #If Not DEBUG Then
             Catch ex As SocketException
 #End If
+            Catch ex As SeeminglyDosAttackException
+                Shutdown()
 
             Catch ex As ThreadAbortException
                 'MessageBox.Show(ex.ToString(), _socketCS.ToString())  ' TODO: comment out this
                 Shutdown()
                 'Exit While
-
 #If Not DEBUG Then
             Catch ex As Exception
                 MessageBox.Show(ex.ToString(), _socketCS.ToString())
@@ -320,7 +348,9 @@ Public MustInherit Class SocketBase
             ' Handle each kind of content previously encrypted by AES
             Select Case contentPack.Kind
                 Case AesContentKind.Text
+                    ' determine package type
                     Dim textPack As AesTextPackage = contentPack
+
                     ' checks the integrity and authenticity of the incoming message
                     If _othersMsgId = Nothing Then  ' update other's message id
                         _othersMsgId = textPack.MessageID
@@ -334,13 +364,31 @@ Public MustInherit Class SocketBase
                         _othersMsgId = incrementedId
                     End If
 
-                    SendFeedback(textPack.MessageID)  ' send feedback to the sender
+                    ' send feedback to the sender
+                    SendFeedback(textPack.MessageID)
 
+                    ' message waiting for being read
                     _msgReceivedQueue.Enqueue(textPack.Text)
-                    RaiseReceivedEventThread()  ' message waiting for being read
+
+                    ' further handle the file
+                    RaiseReceivedEventThread()
+
                 Case AesContentKind.Feedback
+                    ' determine package type
                     Dim feedbackPack As AesFeedbackPackage = contentPack
+
+                    ' handle this incoming feedback
                     ReceiveFeedback(feedbackPack.MessageID)
+
+                Case AesContentKind.File
+                    ' determine package type
+                    Dim fileBytesPack As AesFilePackage = contentPack
+
+                    ' send feedback to the sender
+                    SendFeedback(fileBytesPack.MessageID)
+
+                    ' further handle the file
+                    RaiseEvent ReceivedFile(fileBytesPack.FileBytes, fileBytesPack.Name)
             End Select
 
         Else ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
@@ -603,9 +651,6 @@ Public MustInherit Class SocketBase
 
     ' TODO
     Private Sub SendFeedback(msgID As Integer)
-        Dim compasser As String
-        compasser = MessageTypeStart(MessageType.ID) & msgID & MessageTypeEnd(MessageType.ID) &
-            MessageTypeBody(MessageType.FeedBack)
 
         Dim contentPack = New AesFeedbackPackage()
         contentPack.MessageID = msgID

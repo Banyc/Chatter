@@ -3,17 +3,17 @@
 Public Enum AesContentKind
     Text
     Image  ' TODO
+    File
     Feedback
 End Enum
 
 #Region "Serial Classes"
 Public MustInherit Class AesContentPackage
     Public Property Kind As AesContentKind
+    Public Property MessageID As Integer
 End Class
 
-Public Class AesFeedbackPackage
-    Inherits AesContentPackage
-    Public Property MessageID As Integer
+Public Class AesFeedbackPackage : Inherits AesContentPackage
     Public Sub New()
         Kind = AesContentKind.Feedback
     End Sub
@@ -21,10 +21,17 @@ End Class
 
 Public Class AesTextPackage
     Inherits AesContentPackage
-    Public Property MessageID As Integer
     Public Property Text As String
     Public Sub New()
         Kind = AesContentKind.Text
+    End Sub
+End Class
+
+Public Class AesFilePackage : Inherits AesContentPackage
+    Public Property FileBytes As Byte()
+    Public Property Name As String
+    Public Sub New()
+        Kind = AesContentKind.File
     End Sub
 End Class
 #End Region

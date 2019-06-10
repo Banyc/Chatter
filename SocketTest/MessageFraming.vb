@@ -81,6 +81,7 @@ Public Class MessageFraming
 
     Public Sub New()
         _inMsgBytesQueue = New Queue(Of Byte())
+        _EnableDosWarning = True
     End Sub
 
 #Region "Static Sending"
@@ -117,9 +118,10 @@ Public Class MessageFraming
     End Function
 #End Region
 
-#Region "Receivng"
+#Region "Receiving"
     Private _oldStream As Byte()
     Private _inMsgBytesQueue As Queue(Of Byte())
+    Private _EnableDosWarning As Boolean
 
     ' Involving Events raising
     Public Sub DecodeMsgFrame(newStream As Byte())  ' TODO: review the code structure
@@ -127,25 +129,26 @@ Public Class MessageFraming
         If _oldStream Is Nothing Then
             _oldStream = newStream
         Else
-            _oldStream = _oldStream.Concat(newStream).ToArray()
+            If newStream IsNot Nothing Then
+                _oldStream = _oldStream.Concat(newStream).ToArray()
+            End If
         End If
 
         ' read the 4-bit prefix int32
-        If _oldStream.Length < 4 Then
+        If _oldStream Is Nothing Or _oldStream.Length < 4 Then
             Exit Sub
         Else
             ' read the length of the remaining message
             Dim length As Int32 = BitConverter.ToInt32(_oldStream, 0)
 
             ' handle the seemingly DOS attack
-            If length > 1024 * 1024 * 5 Then
-                If MessageBox.Show(String.Format("The length of the incoming message is {0} bits. Do you want to continue receiving the message?", length.ToString()), "Warning", MessageBoxButton.YesNo) = MessageBoxResult.No Then
-                    Throw New SeeminglyDosAttackException(String.Format("The length of the incoming message is {0} bits", length.ToString()))
-                End If
-            End If
+            DosPrevent(length)
 
             ' split as many messages to the queue as possible
-            While Not _oldStream Is Nothing And _oldStream.Length >= length + 4
+            While _oldStream IsNot Nothing And _oldStream.Length >= length + 4
+                '
+                _EnableDosWarning = True
+
                 ' discard the 4-bit prefix at the head of the stream
                 ' to get a single message from the old stream
                 Dim streamMsgBody As Byte() = _oldStream.Skip(4).Take(length).ToArray()
@@ -153,22 +156,38 @@ Public Class MessageFraming
                 _inMsgBytesQueue.Enqueue(streamMsgBody)
                 _oldStream = _oldStream.Skip(4 + length).Take(_oldStream.Length - length - 4).ToArray()
 
-                ' update the `length` info from the remaining stream
+                ' if the existing stream here is not complete
                 If _oldStream Is Nothing Or _oldStream.Length < 4 Then
                     Exit While
-                Else
-                    length = BitConverter.ToInt32(_oldStream, 0)
                 End If
+
+                ' update the `length` info from the remaining stream
+                length = BitConverter.ToInt32(_oldStream, 0)
+
+                ' handle the seemingly DOS attack
+                DosPrevent(length)
             End While
         End If
 
         ' further handle each message in the queue
         DecodeMessageBytes()
     End Sub
+
+    Private Sub DosPrevent(sizeOfMessage As Integer)
+        If _EnableDosWarning And sizeOfMessage > 1024 * 1024 * 10 Then
+            Dim exceptionMsg As String = String.Format("The length of the incoming message is {0} MB.", (CType(sizeOfMessage, Single) / 1024 / 1024).ToString("F"))
+            If MessageBox.Show(exceptionMsg & " Do you want to continue receiving the message (file)? If not, the connection will be terminated to prevent a possible DOS attack.", "Warning", MessageBoxButton.YesNo) = MessageBoxResult.No Then
+                Throw New SeeminglyDosAttackException(exceptionMsg)
+            Else
+                _EnableDosWarning = False
+            End If
+        End If
+    End Sub
 #End Region
 
 #Region "Static Sending"
     ' NOTE: TRIM THE INPUT BYTES BEFORE CALLING
+    ' Send file or text
     Public Shared Function SendCipher(cipher As Byte()) As Byte()
         Dim msgPack = New CipherMessagePackage()
         msgPack.Content = cipher

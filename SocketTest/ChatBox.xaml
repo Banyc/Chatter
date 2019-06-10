@@ -55,5 +55,12 @@
                 </TextBlock>
             </StackPanel>
         </Grid>
+        <Rectangle x:Name="FileDropZone" 
+                   Visibility="Hidden" 
+                   AllowDrop="True"
+                   Drop="FileDropZone_Drop"
+                   Fill="AntiqueWhite">
+            
+        </Rectangle>
     </Grid>
 </UserControl>

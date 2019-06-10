@@ -77,8 +77,13 @@ Class MainWindow
         FlashTaskbar()
     End Sub
 
-    Private Sub _socket_ReceivedFeedBack(myText As String) Handles _socket.ReceivedFeedBack
-        chatBox.MyMessage(myText)
+    Private Sub _socket_ReceivedFeedBack(contentPack As AesContentPackage) Handles _socket.ReceivedFeedBack
+        Select Case contentPack.Kind
+            Case AesContentKind.Text
+                chatBox.MyMessage(CType(contentPack, AesTextPackage).Text)
+            Case AesContentKind.File
+                chatBox.NewState(ChatState.FileSent, CType(contentPack, AesFilePackage).Name)
+        End Select
     End Sub
 
     Private Sub _socket_Connected() Handles _socket.Connected
@@ -94,11 +99,19 @@ Class MainWindow
         Disconnected(_socket)
         FlashTaskbar()
     End Sub
+
+    Private Sub _socket_ReceivedFile(fileBytes As Byte(), fileName As String) Handles _socket.ReceivedFile
+        chatBox.SaveFile(fileBytes, fileName)
+    End Sub
 #End Region
 
 #Region "char box events"
     Private Sub chatBox_SendMessage(message As String) Handles chatBox.SendMessage
         Send(message)
+    End Sub
+
+    Private Sub chatBox_SendFile(fileBytes As Byte(), fileName As String) Handles chatBox.SendFile
+        SendFile(fileBytes, fileName)
     End Sub
 #End Region
 
@@ -110,27 +123,33 @@ Class MainWindow
 
     Private Sub Connected(endPoint As SocketBase)
         'MessageBox.Show(String.Format("RemoteEndPoint:" & vbCrLf & "{0}", endPoint.GetRemoteEndPoint()), endPoint.EndPointType.ToString() & ", Connect Done")
-        chatBox.NewState(ConnectState.Connected, String.Format("RemoteEndPoint:" & vbCrLf & "{0}", endPoint.GetRemoteEndPoint()))
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ConnectState.Connected))
+        chatBox.NewState(ChatState.Connected, String.Format("RemoteEndPoint:" & vbCrLf & "{0}", endPoint.GetRemoteEndPoint()))
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ChatState.Connected))
     End Sub
 
     Private Sub Encrypted(endPoint As SocketBase)
-        chatBox.NewState(ConnectState.Encrypted)
+        chatBox.NewState(ChatState.Encrypted)
         Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() PrepareChatBox())
     End Sub
 
     Private Sub Disconnected(endPoint As SocketBase)
-        chatBox.NewState(ConnectState.Disconnected)
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ConnectState.Disconnected))
+        chatBox.NewState(ChatState.Disconnected)
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ChatState.Disconnected))
     End Sub
 
-    Private Sub UpdateUI(endPoint As SocketBase, state As ConnectState)
+    Private Sub UpdateUI(endPoint As SocketBase, state As ChatState)
         Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
     End Sub
 
     Private Sub Send(msgStr As String)
         If Not _socket Is Nothing Then
             _socket.SendCipherText(msgStr)
+        End If
+    End Sub
+
+    Private Sub SendFile(fileBytes As Byte(), fileName As String)
+        If Not _socket Is Nothing Then
+            _socket.SendFile(fileBytes, fileName)
         End If
     End Sub
 

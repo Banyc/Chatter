@@ -388,3 +388,5 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] write documentations for each class
 - [x] Ensure integrity of each message in Application Layer assuming no package loss
 - [ ] Deal with package loss
+- [x] Send files
+- [ ] Send image

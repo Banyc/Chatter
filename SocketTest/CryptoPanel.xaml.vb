@@ -19,9 +19,11 @@
         If seedStr Is Nothing Then
             stateBanner.Text = "YOU FORGOT TO SET SEED!"
             Return Nothing
+#If Not DEBUG Then
         ElseIf seedStr.Count < 64 Then
             stateBanner.Text = "PLEASE TYPE MORE RANDOM KEYS!"
             Return Nothing
+#End If
         Else
             Dim hashCode As Integer = seedStr.GetHashCode()
             Return hashCode

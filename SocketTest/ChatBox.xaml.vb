@@ -4,14 +4,17 @@
     ThisUser
 End Enum
 
-Public Enum ConnectState
+Public Enum ChatState
     Connected
     Encrypted
     Disconnected
+    FileSent
+    FileReceived
 End Enum
 
 Public Class ChatBox
     Public Event SendMessage(message As String)
+    Public Event SendFile(fileBytes As Byte(), fileName As String)
 
     Public Sub New()
         InitializeComponent()
@@ -28,7 +31,7 @@ Public Class ChatBox
         AddTxtMessage(ChatRole.Opposite, msgStr)
     End Sub
 
-    Public Sub NewState(state As ConnectState, Optional ByVal additionalMsg As String = Nothing)
+    Public Sub NewState(state As ChatState, Optional ByVal additionalMsg As String = Nothing)
         If additionalMsg Is Nothing Then
             additionalMsg = state.ToString()
         Else
@@ -100,8 +103,45 @@ Public Class ChatBox
                             txtMessage.Document.Blocks.Clear()
                         End Sub)
     End Sub
+
+    Public Sub SaveFile(fileBytes As Byte(), fileName As String)
+        Dim fileDirectory As String = "./Received Files/"
+
+        Dim fileBaseNameNoExt As String = IO.Path.GetFileNameWithoutExtension(fileName)
+        Dim ext As String = IO.Path.GetExtension(fileName)  ' start with '.' if extension exists
+
+        Dim filePath As String = IO.Path.Combine(fileDirectory, fileName)
+
+        ' create directory if does not exist
+        Dim fileInfo As IO.FileInfo
+        fileInfo = New IO.FileInfo(filePath)
+        fileInfo.Directory.Create()
+
+        ' rename if file exists
+        Dim renameID As UInt16 = 0
+        While fileInfo.Exists
+            renameID += 1
+            If ext IsNot Nothing Then
+                filePath = IO.Path.Combine(fileDirectory, String.Format("{0}.{1}{2}", fileBaseNameNoExt, renameID.ToString(), ext))
+            Else
+                filePath = IO.Path.Combine(fileDirectory, String.Format("{0}.{1}", fileBaseNameNoExt, renameID.ToString()))
+            End If
+            fileInfo = New IO.FileInfo(filePath)
+        End While
+
+        ' write in
+        IO.File.WriteAllBytes(filePath, fileBytes)
+
+        ' display new state on screen
+        NewState(ChatState.FileReceived, fileInfo.FullName)
+    End Sub
+
+    Public Function ReadFile(path As String) As Byte()
+        Return IO.File.ReadAllBytes(path)
+    End Function
 #End Region
 
+#Region "Events"
     Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
         RaiseEvent SendMessage(txtInput.Text)
         'AddTxtMessage(ChatRole.ThisUser, txtInput.Text)  ' the text should be put on the screen when the opposite received it and send back the feedback
@@ -126,4 +166,27 @@ Public Class ChatBox
             e.Handled = True
         End If
     End Sub
+
+    Private Sub FileDropZone_Drop(sender As Object, e As DragEventArgs)
+        If e.Data.GetDataPresent(DataFormats.FileDrop) Then
+            Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
+            For Each file In files
+                RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file))
+            Next
+        End If
+    End Sub
+
+    Private Sub ChatBox_PreviewDragEnter(sender As Object, e As DragEventArgs) Handles Me.PreviewDragEnter
+        FileDropZone.Visibility = Visibility.Visible
+    End Sub
+
+    Private Sub ChatBox_PreviewDragLeave(sender As Object, e As DragEventArgs) Handles Me.PreviewDragLeave
+        FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+
+    Private Sub ChatBox_PreviewDrop(sender As Object, e As DragEventArgs) Handles Me.PreviewDrop
+        FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+
+#End Region
 End Class
