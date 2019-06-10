@@ -44,6 +44,8 @@ Class
   - File drop
 - "AesApi.vb" - providing AES
 - "RsaApi.vb" - providing RSA
+- `MessageFraming` - serialize transmitting message
+- `AesContentFraming` - serialize  content inside the transmitting message
 - "SocketBase.vb" - handling all logic of socket operations
 - "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
 - "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
@@ -68,6 +70,8 @@ Xaml
     - `SocketBase` - init - base
       - `AesApi` - init
       - `RsaApi` - init
+      - `AesContentFraming` - shared
+      - `MessageFraming` - init
   - `SocketListener` - init
     - `SocketBase` - init - base
       - ...
