@@ -398,3 +398,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] Deal with package loss
 - [x] Send files
 - [x] Send image
+- [ ] Multi socket connections for file transmission

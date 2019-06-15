@@ -63,7 +63,7 @@ Public MustInherit Class SocketBase
     Private _myMsgId As UInteger
     Private _othersMsgId As UInteger
 
-    Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
+    Private _textReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
     Private _msgNotComfirmedList As Dictionary(Of Integer, AesLocalPackage)  ' stores sended messages  ' msgID : msgPackage
     'Private _msgOnScreen As List(Of String)
     Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted session key and IV, which are still bytes
@@ -90,7 +90,7 @@ Public MustInherit Class SocketBase
         _port = port
         EndPointType = socketCS
         _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
-        _msgReceivedQueue = New Queue(Of String)
+        _textReceivedQueue = New Queue(Of String)
         _byteQueue = New Queue(Of Byte())
         _socketCS = socketCS
         _RSA = New RsaApi()
@@ -271,7 +271,7 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "on reception"
-    Private Sub RaiseReceivedEventThread()
+    Private Sub RaiseTextReceivedEventThread()
         ' raise event when the decrypted message is reached
         Dim eventThread As New Thread(
         Sub()
@@ -353,33 +353,27 @@ Public MustInherit Class SocketBase
             Dim contentPack As AesContentPackage
             contentPack = AesContentFraming.GetAesContentPackage(decryptedContent)
 
+            ' checks the integrity and authenticity of the incoming message
+            If contentPack.Kind <> AesContentKind.Feedback Then
+                If Not DoesMessageIntegrated(contentPack) Then
+                    Exit Sub
+                End If
+            End If
+
             ' Handle each kind of content previously encrypted by AES
             Select Case contentPack.Kind
                 Case AesContentKind.Text
                     ' determine package type
                     Dim textPack As AesTextPackage = contentPack
 
-                    ' checks the integrity and authenticity of the incoming message
-                    If _othersMsgId = Nothing Then  ' update other's message id
-                        _othersMsgId = textPack.MessageID
-                    Else
-                        Dim incrementedId As UInteger
-                        incrementedId = UIntIncrement(_othersMsgId)
-                        If incrementedId <> textPack.MessageID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
-                            MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
-                            Exit Sub
-                        End If
-                        _othersMsgId = incrementedId
-                    End If
-
                     ' send feedback to the sender
                     SendFeedback(textPack.MessageID)
 
-                    ' message waiting for being read
-                    _msgReceivedQueue.Enqueue(textPack.Text)
+                    ' text that is waiting for being read
+                    _textReceivedQueue.Enqueue(textPack.Text)
 
                     ' further handle the file
-                    RaiseReceivedEventThread()
+                    RaiseTextReceivedEventThread()
 
                 Case AesContentKind.Feedback
                     ' determine package type
@@ -416,7 +410,7 @@ Public MustInherit Class SocketBase
     Private Sub ReceivedPlaintext(text As String) Handles _messageFramer.ReceivedPlaintext
         ' explicitly pop out a window for it is tranmitted without encrypted
         Dim messageBoxThread As New Thread(Sub()
-                                               'MessageBox.Show(_msgReceivedQueue.Dequeue(), "[RECEIVED] PLAIN TEXT NOT SAFE")
+                                               'MessageBox.Show(_textReceivedQueue.Dequeue(), "[RECEIVED] PLAIN TEXT NOT SAFE")
                                                MessageBox.Show(text, "[RECEIVED] PLAIN TEXT NOT SAFE")
                                                messageBoxThread.Abort()
                                            End Sub)
@@ -677,6 +671,22 @@ Public MustInherit Class SocketBase
 
         _SendCipherPackage(_handler, json)
     End Sub
+
+    ' checks the integrity and authenticity of the incoming message
+    Private Function DoesMessageIntegrated(aesPack As AesContentPackage) As Boolean
+        If _othersMsgId = Nothing Then  ' update other's message id
+            _othersMsgId = aesPack.MessageID
+        Else
+            Dim incrementedId As UInteger
+            incrementedId = UIntIncrement(_othersMsgId)
+            If incrementedId <> aesPack.MessageID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
+                MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
+                Return False
+            End If
+            _othersMsgId = incrementedId
+        End If
+        Return True
+    End Function
 #End Region
 
 #Region "Sets&Gets"
@@ -717,8 +727,8 @@ Public MustInherit Class SocketBase
     End Function
 
     Public Function GetEarlyMsg()
-        If _msgReceivedQueue.Count > 0 Then
-            Return _msgReceivedQueue.Dequeue()
+        If _textReceivedQueue.Count > 0 Then
+            Return _textReceivedQueue.Dequeue()
         Else
             Return Nothing
         End If
