@@ -7,15 +7,19 @@ Public Enum AesContentKind
     Feedback
 End Enum
 
-#Region "Serial Classes"
+#Region "Serial Classes - send-out packages"
 Public MustInherit Class AesContentPackage
-    Public Property Kind As AesContentKind
+    Public ReadOnly Property Kind As AesContentKind
     Public Property MessageID As Integer
+
+    Public Sub New(kind As AesContentKind)
+        _Kind = kind
+    End Sub
 End Class
 
 Public Class AesFeedbackPackage : Inherits AesContentPackage
     Public Sub New()
-        Kind = AesContentKind.Feedback
+        MyBase.New(AesContentKind.Feedback)
     End Sub
 End Class
 
@@ -23,7 +27,7 @@ Public Class AesTextPackage
     Inherits AesContentPackage
     Public Property Text As String
     Public Sub New()
-        Kind = AesContentKind.Text
+        MyBase.New(AesContentKind.Text)
     End Sub
 End Class
 
@@ -31,7 +35,32 @@ Public Class AesFilePackage : Inherits AesContentPackage
     Public Property FileBytes As Byte()
     Public Property Name As String
     Public Sub New()
-        Kind = AesContentKind.File
+        MyBase.New(AesContentKind.File)
+    End Sub
+End Class
+
+Public Class AesImagePackage : Inherits AesContentPackage
+    Public Property ImageBytes As Byte()
+    Public Sub New()
+        MyBase.New(AesContentKind.Image)
+    End Sub
+End Class
+#End Region
+
+#Region "Not-sending packages"
+' the content package here contains private data
+' only used to temperately store the package in local
+Public Class AesLocalPackage
+    Public ReadOnly Property AesContentPack As AesContentPackage
+    Public Sub New(aesPack As AesContentPackage)
+        _AesContentPack = aesPack
+    End Sub
+End Class
+Public Class AesLocalFilePackage : Inherits AesLocalPackage
+    Public ReadOnly Property FilePath As String
+    Public Sub New(aesPack As AesContentPackage, theFilePath As String)
+        MyBase.New(aesPack)
+        _FilePath = theFilePath
     End Sub
 End Class
 #End Region

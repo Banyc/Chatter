@@ -37,37 +37,50 @@ End Enum
 
 #Region "Serial Classes"
 Friend MustInherit Class MessagePackage
-    Public Property Kind As MessageKind
-    'Public MustOverride Property Content
+    'Friend MustInherit Class MessagePackage(Of T)
+    Public ReadOnly Property Kind As MessageKind
+    'Public MustOverride Property Content As T
+
+    Public Sub New(kind As MessageKind)
+        _Kind = kind
+    End Sub
 End Class
 
 Friend Class CipherMessagePackage
+    'Inherits MessagePackage(Of Byte())
     Inherits MessagePackage
+    'Public Overrides Property Content As Byte()  ' NOTE: `As UTF8.GetBytes(AesContentPackage)`
     Public Property Content As Byte()  ' NOTE: `As UTF8.GetBytes(AesContentPackage)`
     Public Sub New()
-        Kind = MessageKind.Cipher
+        MyBase.New(MessageKind.Cipher)
     End Sub
 End Class
 Friend Class PlaintextMessagePackage
+    'Inherits MessagePackage(Of String)
     Inherits MessagePackage
+    'Public Overrides Property Content As String
     Public Property Content As String
     Public Sub New()
-        Kind = MessageKind.Plaintext
+        MyBase.New(MessageKind.Plaintext)
     End Sub
 End Class
 Friend Class PlaintextSignalMessagePackage
+    'Inherits MessagePackage(Of MessagePlaintextSignal)
     Inherits MessagePackage
+    'Public Overrides Property Content As MessagePlaintextSignal
     Public Property Content As MessagePlaintextSignal
     Public Sub New()
-        Kind = MessageKind.PlaintextSignal
+        MyBase.New(MessageKind.PlaintextSignal)
     End Sub
 End Class
 
 Friend Class EncryptedSessionKeyMessagePackage
+    'Inherits MessagePackage(Of Byte())
     Inherits MessagePackage
+    'Public Overrides Property Content As Byte()
     Public Property Content As Byte()
     Sub New()
-        Kind = MessageKind.EncryptedSessionKey
+        MyBase.New(MessageKind.EncryptedSessionKey)
     End Sub
 End Class
 #End Region
@@ -106,6 +119,7 @@ Public Class MessageFraming
 
         Return newStream
     End Function
+    'Private Shared Function GetMsgFrame(Of T)(msgPack As MessagePackage(Of T)) As Byte()
     Private Shared Function GetMsgFrame(msgPack As MessagePackage) As Byte()
         ' Set identifier for json - ref - <https://christianarg.wordpress.com/2012/11/06/serializing-and-deserializing-inherited-types-with-json-anything-you-want/>
         Dim jsonSettings = New JsonSerializerSettings()

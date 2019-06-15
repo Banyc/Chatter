@@ -20,6 +20,7 @@
                              Background="Transparent" 
                              BorderThickness="0"
                              IsReadOnly="True"
+                             IsDocumentEnabled="True"
                              Margin="10,10,10,20"
                              />  <!--message display--> <!--https://stackoverflow.com/questions/136435/any-way-to-make-a-wpf-textblock-selectable-->
             </ScrollViewer>
@@ -59,8 +60,8 @@
                    Visibility="Hidden" 
                    AllowDrop="True"
                    Drop="FileDropZone_Drop"
-                   Fill="AntiqueWhite">
-            
+                   Fill="White"
+                   Opacity="0.8">
         </Rectangle>
     </Grid>
 </UserControl>

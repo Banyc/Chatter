@@ -14,7 +14,8 @@ End Enum
 
 Public Class ChatBox
     Public Event SendMessage(message As String)
-    Public Event SendFile(fileBytes As Byte(), fileName As String)
+    Public Event SendFile(fileBytes As Byte(), fileName As String, path As String)
+    Public Event SendImage(imageBytes As Byte())
 
     Public Sub New()
         InitializeComponent()
@@ -41,6 +42,61 @@ Public Class ChatBox
         AddTxtMessage(ChatRole.System, additionalMsg)
     End Sub
 
+    Private Sub AddThumbnail(sender As ChatRole, img As Image)
+        AddThumbnail(sender, img, DateTime.Now)
+    End Sub
+
+    ' TODO: merge to `AddTxtMessage`
+    Private Sub AddThumbnail(sender As ChatRole, img As Image, time As DateTime)
+        ' <https://stackoverflow.com/questions/33466546/the-calling-thread-cannot-access-this-object-because-a-different-thread-owns-it>
+        Me.Dispatcher.
+            Invoke(Windows.Threading.DispatcherPriority.Normal, Sub()
+                                                                    Dim stateLine = New Run(String.Format("{0}", time.ToString()))
+                                                                    stateLine.Foreground = Brushes.LightGray
+
+                                                                    Dim stateParag = New Paragraph()  ' deals with the state message
+                                                                    Dim textParag = New Paragraph()  ' deals with the new text message
+
+                                                                    'parag.Inlines.Add(emptyLine)
+                                                                    stateParag.Inlines.Add(stateLine)
+                                                                    stateParag.Margin = New Thickness(5, 10, 5, 5)
+
+
+                                                                    textParag.Inlines.Add(img)
+                                                                    textParag.Margin = New Thickness(5, 5, 5, 10)
+
+                                                                    Select Case sender
+                                                                        Case ChatRole.System
+                                                                            stateParag.TextAlignment = TextAlignment.Center
+                                                                            textParag.TextAlignment = TextAlignment.Center
+                                                                        Case ChatRole.Opposite
+                                                                            stateParag.TextAlignment = TextAlignment.Left
+                                                                            textParag.TextAlignment = TextAlignment.Left
+                                                                        Case ChatRole.ThisUser
+                                                                            stateParag.TextAlignment = TextAlignment.Right
+                                                                            textParag.TextAlignment = TextAlignment.Right
+                                                                    End Select
+
+                                                                    '<https://www.wiredprairie.us/journal/2007/05/creating_wpf_flowdocuments_on.html>
+                                                                    Dim stateStream As System.IO.MemoryStream = New System.IO.MemoryStream()
+                                                                    System.Windows.Markup.XamlWriter.Save(stateParag, stateStream)
+                                                                    stateStream.Position = 0
+
+                                                                    Dim textStream As System.IO.MemoryStream = New System.IO.MemoryStream()
+                                                                    System.Windows.Markup.XamlWriter.Save(textParag, textStream)
+                                                                    textStream.Position = 0
+
+                                                                    Me.Dispatcher.
+        BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                        Sub()
+                            'txtMessage.Text &= String.Format(vbCrLf & "{0} {1}" & vbCrLf & "{2}" & vbCrLf, sender.ToString(), time.ToString(), msgStr)
+                            txtMessage.Document.Blocks.Add(System.Windows.Markup.XamlReader.Load(stateStream))
+                            txtMessage.Document.Blocks.Add(System.Windows.Markup.XamlReader.Load(textStream))
+                            scroll.ScrollToBottom()
+                        End Sub)
+                                                                End Sub）
+    End Sub
+
     Private Sub AddTxtMessage(sender As ChatRole, msgStr As String)
         AddTxtMessage(sender, msgStr, DateTime.Now)
     End Sub
@@ -53,8 +109,8 @@ Public Class ChatBox
         Dim textLine = New Run(String.Format("{0}", msgStr))
         textLine.Foreground = Brushes.DarkSlateGray
 
-        Dim stateParag = New Paragraph()
-        Dim textParag = New Paragraph()
+        Dim stateParag = New Paragraph()  ' deals with the state message
+        Dim textParag = New Paragraph()  ' deals with the new text message
 
         'parag.Inlines.Add(emptyLine)
         stateParag.Inlines.Add(stateLine)
@@ -96,6 +152,30 @@ Public Class ChatBox
                         End Sub)
     End Sub
 
+    Public Sub DisplayImageIfValid(imagePath As String)
+        'If String.Equals(IO.Path.GetExtension(imagePath), ".jpg", StringComparison.CurrentCultureIgnoreCase) Then
+
+        Dim bitmap As BitmapImage
+
+            Try
+                bitmap = New BitmapImage(New Uri(imagePath))
+            Catch ex As NotSupportedException
+                Exit Sub
+            End Try
+
+            ' <https://social.msdn.microsoft.com/Forums/vstudio/en-US/bca317e1-299b-4961-ba7b-8afdf977e2e8/thisdispatcherinvoke-gives-me-the-calling-thread-cannot-access-this-object-because-a-different?forum=wpf>
+            bitmap.Freeze()
+
+            Dim imgControl As Image = Nothing
+            Me.Dispatcher.Invoke(Windows.Threading.DispatcherPriority.Normal, Sub()
+                                                                                  imgControl = New Image()
+                                                                                  imgControl.Source = bitmap
+                                                                              End Sub)
+
+            AddThumbnail(ChatRole.Opposite, imgControl)
+        'End If
+    End Sub
+
     Public Sub ClearAllText()
         Me.Dispatcher.
             BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
@@ -104,7 +184,19 @@ Public Class ChatBox
                         End Sub)
     End Sub
 
-    Public Sub SaveFile(fileBytes As Byte(), fileName As String)
+    Public Sub HandleReceivedFile(fileBytes As Byte(), fileName As String)
+        Dim filePath As String
+        filePath = SaveFile(fileBytes, fileName)
+
+        ' display new state on screen
+        NewState(ChatState.FileReceived, filePath)
+
+        ' display image
+        DisplayImageIfValid(filePath)
+        '.IsValidImageFile()
+    End Sub
+
+    Private Function SaveFile(fileBytes As Byte(), fileName As String)
         Dim fileDirectory As String = "./Received Files/"
 
         Dim fileBaseNameNoExt As String = IO.Path.GetFileNameWithoutExtension(fileName)
@@ -132,9 +224,9 @@ Public Class ChatBox
         ' write in
         IO.File.WriteAllBytes(filePath, fileBytes)
 
-        ' display new state on screen
-        NewState(ChatState.FileReceived, fileInfo.FullName)
-    End Sub
+        ' return the path
+        Return fileInfo.FullName
+    End Function
 
     Public Function ReadFile(path As String) As Byte()
         Return IO.File.ReadAllBytes(path)
@@ -171,7 +263,10 @@ Public Class ChatBox
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
             For Each file In files
-                RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file))
+                'If String.Equals(IO.Path.GetExtension(file), "jpg", StringComparison.CurrentCultureIgnoreCase) Then
+                '    RaiseEvent SendImage(ReadFile(file))
+                'End If
+                RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file), file)
             Next
         End If
     End Sub

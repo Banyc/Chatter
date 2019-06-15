@@ -18,9 +18,10 @@ Public MustInherit Class SocketBase
     Public Event SendedSessionKey()
     Public Event ReceivedSessionKey()
     Public Event Encrypted()
-    Public Event ReceivedFeedBack(contentPackage As AesContentPackage)
+    Public Event ReceivedFeedBack(contentPackage As AesLocalPackage)
     Public Event Disconnected()
     Public Event ReceivedFile(fileBytes As Byte(), fileName As String)
+    Public Event ReceivedImage(imageBytes As Byte())
 #End Region
 
 #Region "Variables Decl"
@@ -63,7 +64,7 @@ Public MustInherit Class SocketBase
     Private _othersMsgId As UInteger
 
     Private _msgReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
-    Private _msgNotComfirmedList As Dictionary(Of Integer, AesContentPackage)  ' stores sended messages  ' msgID : msgPackage
+    Private _msgNotComfirmedList As Dictionary(Of Integer, AesLocalPackage)  ' stores sended messages  ' msgID : msgPackage
     'Private _msgOnScreen As List(Of String)
     Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted session key and IV, which are still bytes
 
@@ -88,7 +89,7 @@ Public MustInherit Class SocketBase
         _ip = ip
         _port = port
         EndPointType = socketCS
-        _msgNotComfirmedList = New Dictionary(Of Integer, AesContentPackage)
+        _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
         _msgReceivedQueue = New Queue(Of String)
         _byteQueue = New Queue(Of Byte())
         _socketCS = socketCS
@@ -119,32 +120,38 @@ Public MustInherit Class SocketBase
         _SendBytes(_handler, msgBytes)
     End Sub
 
-    Public Sub SendFile(fileBytes As Byte(), fileName As String)
+    Public Sub SendFile(fileBytes As Byte(), fileName As String, filePath As String)
         Dim contentPack = New AesFilePackage()
         contentPack.FileBytes = fileBytes
         contentPack.Name = fileName
 
-        SendCipher(contentPack)
+        Dim localPack = New AesLocalFilePackage(contentPack, filePath)
+
+        SendCipher(contentPack, localPack)
     End Sub
 
     ' Public entrance to send text
     Public Sub SendCipherText(plainText As String)
-        _myMsgId = UIntIncrement(_myMsgId)  ' updates msg ID
+        Dim contentPack = New AesTextPackage()
+        contentPack.Text = plainText
 
-        SendCipherText(plainText, _myMsgId)
+        Dim localPack = New AesLocalPackage(contentPack)
+
+        SendCipher(contentPack, localPack)
     End Sub
+
+    'Public Sub SendImage(imageBytes As Byte())
+    '    Dim contentPack = New AesImagePackage()
+    '    contentPack.ImageBytes = imageBytes
+
+    '    SendCipher(contentPack)
+    'End Sub
 
     ' GENERAL METHOD
     ' NOTE: DOES NOT NEED TO UPDATE `.MessageID` of `aesPack`
-    Public Sub SendCipher(aesPack As AesContentPackage)
-        ' updates msg ID
-        _myMsgId = UIntIncrement(_myMsgId)
-
-        ' update msg ID
-        aesPack.MessageID = _myMsgId
-
-        ' save the outing message for later examine if the opposite indeed received it
-        _msgNotComfirmedList.Add(aesPack.MessageID, aesPack)
+    Public Sub SendCipher(aesPack As AesContentPackage, localPack As AesLocalPackage)
+        ' NOTICE: This method must be called first
+        _StoreTempPackForFeedback(localPack)
 
         ' Serialize Object into string
         Dim unencryptedJson As String = AesContentFraming.GetJsonString(aesPack)
@@ -152,15 +159,16 @@ Public MustInherit Class SocketBase
         _SendCipherPackage(_handler, unencryptedJson)
     End Sub
 
-    Private Sub SendCipherText(plainText As String, id As Integer)
-        Dim contentPack = New AesTextPackage()
-        contentPack.MessageID = id
-        contentPack.Text = plainText
+    ' NOTICE: This method must be called before `SendCipher`
+    Private Sub _StoreTempPackForFeedback(localPack As AesLocalPackage)
+        ' updates msg ID
+        _myMsgId = UIntIncrement(_myMsgId)
 
-        Dim unencryptedJson As String = AesContentFraming.GetJsonString(contentPack)
+        ' update msg ID
+        localPack.AesContentPack.MessageID = _myMsgId
 
-        _msgNotComfirmedList.Add(id, contentPack)
-        _SendCipherPackage(_handler, unencryptedJson)
+        ' save the outing message for later examine if the opposite indeed received it
+        _msgNotComfirmedList.Add(localPack.AesContentPack.MessageID, localPack)
     End Sub
 
     ' in plain text
@@ -209,12 +217,12 @@ Public MustInherit Class SocketBase
         If Not sock Is Nothing Then
             If sock.Connected Then
                 Dim thread As New Thread(
-                        Sub()
-                            _connectDone.WaitOne()
-                            ' Send the data through the socket.
-                            Dim bytesSent As Integer = sock.Send(msgAttached)
-                            thread.Abort()
-                        End Sub)
+                    Sub()
+                        _connectDone.WaitOne()
+                        ' Send the data through the socket.
+                        Dim bytesSent As Integer = sock.Send(msgAttached)
+                        thread.Abort()
+                    End Sub)
                 thread.Start()
             End If
         End If
@@ -225,39 +233,39 @@ Public MustInherit Class SocketBase
     ' listen if new message is received
     Private Sub ListenLoop()
         _listenThread = New Thread(
-            Sub()
-                While True
-                    _connectDone.WaitOne()  ' the handler has done the connection
-                    ''If IsConnect(_handler) Then
-                    Receive(_handler)
-                    'Else
-                    'RaiseEvent Disconnected()
-                    'Shutdown()
-                    'Exit While
-                    'End If
-                End While
-            End Sub)
+        Sub()
+            While True
+                _connectDone.WaitOne()  ' the handler has done the connection
+                ''If IsConnect(_handler) Then
+                Receive(_handler)
+                'Else
+                'RaiseEvent Disconnected()
+                'Shutdown()
+                'Exit While
+                'End If
+            End While
+        End Sub)
         _listenThread.Start()
     End Sub
 
     ' check if the connection is off
     Private Sub CheckConnectLoop()
         _checkConnectThread = New Thread(
-            Sub()
-                While True
-                    _connectDone.WaitOne()  ' the handler has done the connection
-                    If Not IsConnect(_handler) Then
-                        Thread.Sleep(1000)
-                        If Not IsConnect(_handler) Then  ' double check
-                            RaiseEvent Disconnected()
-                            'Shutdown()
-                            Exit While
-                        End If
+        Sub()
+            While True
+                _connectDone.WaitOne()  ' the handler has done the connection
+                If Not IsConnect(_handler) Then
+                    Thread.Sleep(1000)
+                    If Not IsConnect(_handler) Then  ' double check
+                        RaiseEvent Disconnected()
+                        'Shutdown()
+                        Exit While
                     End If
-                    Thread.Sleep(2000)
-                End While
-                _checkConnectThread.Abort()
-            End Sub)
+                End If
+                Thread.Sleep(2000)
+            End While
+            _checkConnectThread.Abort()
+        End Sub)
         _checkConnectThread.Start()
     End Sub
 #End Region
@@ -266,20 +274,20 @@ Public MustInherit Class SocketBase
     Private Sub RaiseReceivedEventThread()
         ' raise event when the decrypted message is reached
         Dim eventThread As New Thread(
-            Sub()
-                RaiseEvent ReceiveText()
-                eventThread.Abort()
-            End Sub)
+        Sub()
+            RaiseEvent ReceiveText()
+            eventThread.Abort()
+        End Sub)
         eventThread.Start()
     End Sub
 
     Private Sub RaiseStandbyEventThread()
         ' updates UI
         Dim eventThread As New Thread(
-            Sub()
-                RaiseEvent OpppsiteStandby()
-                eventThread.Abort()
-            End Sub)
+        Sub()
+            RaiseEvent OpppsiteStandby()
+            eventThread.Abort()
+        End Sub)
         eventThread.Start()
     End Sub
 
@@ -389,6 +397,16 @@ Public MustInherit Class SocketBase
 
                     ' further handle the file
                     RaiseEvent ReceivedFile(fileBytesPack.FileBytes, fileBytesPack.Name)
+
+                Case AesContentKind.Image
+                    ' determine package type
+                    Dim imagePack As AesImagePackage = contentPack
+
+                    ' send feedback to the sender
+                    SendFeedback(imagePack.MessageID)
+
+                    ' further handle the file
+                    RaiseEvent ReceivedImage(imagePack.ImageBytes)
             End Select
 
         Else ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
@@ -447,11 +465,11 @@ Public MustInherit Class SocketBase
     Protected Sub ConnectDone()
         _connectDone.Set()
         Dim thread As New Thread(
-            Sub()
-                'MessageBox.Show(String.Format("RemoteEndPoint:" & vbCrLf & "{0}", _handler.RemoteEndPoint.ToString()), _socketCS.ToString() & ", " & "Connect Done")
-                RaiseEvent Connected()
-                thread.Abort()
-            End Sub)
+        Sub()
+            'MessageBox.Show(String.Format("RemoteEndPoint:" & vbCrLf & "{0}", _handler.RemoteEndPoint.ToString()), _socketCS.ToString() & ", " & "Connect Done")
+            RaiseEvent Connected()
+            thread.Abort()
+        End Sub)
         thread.Start()
     End Sub
 

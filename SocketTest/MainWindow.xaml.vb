@@ -77,12 +77,13 @@ Class MainWindow
         FlashTaskbar()
     End Sub
 
-    Private Sub _socket_ReceivedFeedBack(contentPack As AesContentPackage) Handles _socket.ReceivedFeedBack
-        Select Case contentPack.Kind
+    Private Sub _socket_ReceivedFeedBack(localContentPack As AesLocalPackage) Handles _socket.ReceivedFeedBack
+        Select Case localContentPack.AesContentPack.Kind
             Case AesContentKind.Text
-                chatBox.MyMessage(CType(contentPack, AesTextPackage).Text)
+                chatBox.MyMessage(CType(localContentPack.AesContentPack, AesTextPackage).Text)
             Case AesContentKind.File
-                chatBox.NewState(ChatState.FileSent, CType(contentPack, AesFilePackage).Name)
+                chatBox.NewState(ChatState.FileSent, CType(localContentPack, AesLocalFilePackage).FilePath)
+                chatBox.DisplayImageIfValid(CType(localContentPack, AesLocalFilePackage).FilePath)
         End Select
     End Sub
 
@@ -101,17 +102,7 @@ Class MainWindow
     End Sub
 
     Private Sub _socket_ReceivedFile(fileBytes As Byte(), fileName As String) Handles _socket.ReceivedFile
-        chatBox.SaveFile(fileBytes, fileName)
-    End Sub
-#End Region
-
-#Region "char box events"
-    Private Sub chatBox_SendMessage(message As String) Handles chatBox.SendMessage
-        Send(message)
-    End Sub
-
-    Private Sub chatBox_SendFile(fileBytes As Byte(), fileName As String) Handles chatBox.SendFile
-        SendFile(fileBytes, fileName)
+        chatBox.HandleReceivedFile(fileBytes, fileName)
     End Sub
 #End Region
 
@@ -139,18 +130,6 @@ Class MainWindow
 
     Private Sub UpdateUI(endPoint As SocketBase, state As ChatState)
         Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
-    End Sub
-
-    Private Sub Send(msgStr As String)
-        If Not _socket Is Nothing Then
-            _socket.SendCipherText(msgStr)
-        End If
-    End Sub
-
-    Private Sub SendFile(fileBytes As Byte(), fileName As String)
-        If Not _socket Is Nothing Then
-            _socket.SendFile(fileBytes, fileName)
-        End If
     End Sub
 
     Private Sub DisableIpTxt()
@@ -184,6 +163,40 @@ Class MainWindow
                             End Sub)
         End If
     End Sub
+#End Region
+
+#Region "SocketBase - CharBox"
+
+#Region "char box events"
+    Private Sub chatBox_SendMessage(message As String) Handles chatBox.SendMessage
+        Send(message)
+    End Sub
+
+    Private Sub chatBox_SendFile(fileBytes As Byte(), fileName As String, path As String) Handles chatBox.SendFile
+        Send(fileBytes, fileName, path)
+    End Sub
+
+    'Private Sub chatBox_SendImage(imageBytes As Byte()) Handles chatBox.SendImage
+    '    Send(imageBytes)
+    'End Sub
+#End Region
+    Private Sub Send(msgStr As String)
+        If Not _socket Is Nothing Then
+            _socket.SendCipherText(msgStr)
+        End If
+    End Sub
+
+    Private Sub Send(fileBytes As Byte(), fileName As String, path As String)
+        If Not _socket Is Nothing Then
+            _socket.SendFile(fileBytes, fileName, path)
+        End If
+    End Sub
+
+    'Private Sub Send(imageBytes As Byte())
+    '    If Not _socket Is Nothing Then
+    '        _socket.SendImage(imageBytes)
+    '    End If
+    'End Sub
 #End Region
 
 #Region "test"
