@@ -286,10 +286,12 @@ The final hashing return will be the session key.
 
 Hierarchy of Message
 
-- `MessagePackage` (etc. Message)
+- `MessagePackage` (etc. Message) - message that is sent out to the peer
   - `AesContentPackage` (etc. Content) - content that is encrypted thru AES
+- `AesLocalPackage` - Only stored in local, not sending out, maybe containing private data
+  - `AesContentPackage`
 
-`MessagePackage`
+#### `MessagePackage`
 
 - `Kind`
   - `PlaintextSignal`
@@ -298,20 +300,22 @@ Hierarchy of Message
   - `EncryptedSessionKey`
 - `Content` - Depends on what specific kind of message is
 
-`Content` type
+#### `Content` type
 
 - `Enum` - For PlaintextSignal
 - `Byte()` - For Cipher and EncryptedSessionKey - Byte-ization of `AesContentPackage`
 - `Text` - For Plaintext
 
-`AesContentPackage`
+#### `AesContentPackage`
 
 - `Kind`
   - `Text`
-  - `Image`  ' TODO
+  - `Image`  ' pending to discard
   - `Feedback`
+  - `File`
 
 TODO: explain different derived class under `AesContentPackage`
+TODO: explain different derived class under `AesLocalPackage`
 
 #### Cipher Content
 
@@ -370,7 +374,7 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 
 ## Known Limitation
 
-- each transmission allows message only up to 1024 bit
+- ~~each transmission allows message only up to 1024 bit~~
 
 ## Acknowledgement
 
@@ -393,4 +397,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] Ensure integrity of each message in Application Layer assuming no package loss
 - [ ] Deal with package loss
 - [x] Send files
-- [ ] Send image
+- [x] Send image
