@@ -83,7 +83,7 @@ Class MainWindow
                 chatBox.MyMessage(CType(localContentPack.AesContentPack, AesTextPackage).Text)
             Case AesContentKind.File
                 chatBox.NewState(ChatState.FileSent, CType(localContentPack, AesLocalFilePackage).FilePath)
-                chatBox.DisplayImageIfValid(CType(localContentPack, AesLocalFilePackage).FilePath)
+                chatBox.DisplayImageIfValid(ChatRole.ThisUser, CType(localContentPack, AesLocalFilePackage).FilePath)
         End Select
     End Sub
 

@@ -61,6 +61,17 @@ Public Class ChatBox
                                                                     stateParag.Inlines.Add(stateLine)
                                                                     stateParag.Margin = New Thickness(5, 10, 5, 5)
 
+                                                                    Dim maxHeight = scroll.ActualHeight * 3 / 4
+                                                                    Dim maxWidth = txtMessage.ActualWidth * 3 / 4
+
+                                                                    If img.Source.Width < maxWidth And img.Source.Height < maxHeight Then
+                                                                        img.Stretch = Stretch.None
+                                                                    Else
+                                                                        img.Stretch = Stretch.Uniform
+                                                                    End If
+
+                                                                    img.MaxHeight = maxHeight
+                                                                    img.MaxWidth = maxWidth
 
                                                                     textParag.Inlines.Add(img)
                                                                     textParag.Margin = New Thickness(5, 5, 5, 10)
@@ -69,12 +80,18 @@ Public Class ChatBox
                                                                         Case ChatRole.System
                                                                             stateParag.TextAlignment = TextAlignment.Center
                                                                             textParag.TextAlignment = TextAlignment.Center
+                                                                            'img.HorizontalAlignment = HorizontalAlignment.Center
+
                                                                         Case ChatRole.Opposite
                                                                             stateParag.TextAlignment = TextAlignment.Left
                                                                             textParag.TextAlignment = TextAlignment.Left
+                                                                            'img.HorizontalAlignment = HorizontalAlignment.Left
+
                                                                         Case ChatRole.ThisUser
                                                                             stateParag.TextAlignment = TextAlignment.Right
                                                                             textParag.TextAlignment = TextAlignment.Right
+                                                                            'img.HorizontalAlignment = HorizontalAlignment.Right
+
                                                                     End Select
 
                                                                     '<https://www.wiredprairie.us/journal/2007/05/creating_wpf_flowdocuments_on.html>
@@ -94,7 +111,7 @@ Public Class ChatBox
                             txtMessage.Document.Blocks.Add(System.Windows.Markup.XamlReader.Load(textStream))
                             scroll.ScrollToBottom()
                         End Sub)
-                                                                End Sub）
+                                                                End Sub)
     End Sub
 
     Private Sub AddTxtMessage(sender As ChatRole, msgStr As String)
@@ -152,27 +169,27 @@ Public Class ChatBox
                         End Sub)
     End Sub
 
-    Public Sub DisplayImageIfValid(imagePath As String)
+    Public Sub DisplayImageIfValid(role As ChatRole, imagePath As String)
         'If String.Equals(IO.Path.GetExtension(imagePath), ".jpg", StringComparison.CurrentCultureIgnoreCase) Then
 
         Dim bitmap As BitmapImage
 
-            Try
-                bitmap = New BitmapImage(New Uri(imagePath))
-            Catch ex As NotSupportedException
-                Exit Sub
-            End Try
+        Try
+            bitmap = New BitmapImage(New Uri(imagePath))
+        Catch ex As NotSupportedException
+            Exit Sub
+        End Try
 
-            ' <https://social.msdn.microsoft.com/Forums/vstudio/en-US/bca317e1-299b-4961-ba7b-8afdf977e2e8/thisdispatcherinvoke-gives-me-the-calling-thread-cannot-access-this-object-because-a-different?forum=wpf>
-            bitmap.Freeze()
+        ' <https://social.msdn.microsoft.com/Forums/vstudio/en-US/bca317e1-299b-4961-ba7b-8afdf977e2e8/thisdispatcherinvoke-gives-me-the-calling-thread-cannot-access-this-object-because-a-different?forum=wpf>
+        bitmap.Freeze()
 
-            Dim imgControl As Image = Nothing
-            Me.Dispatcher.Invoke(Windows.Threading.DispatcherPriority.Normal, Sub()
-                                                                                  imgControl = New Image()
-                                                                                  imgControl.Source = bitmap
-                                                                              End Sub)
+        Dim imgControl As Image = Nothing
+        Me.Dispatcher.Invoke(Windows.Threading.DispatcherPriority.Normal, Sub()
+                                                                              imgControl = New Image()
+                                                                              imgControl.Source = bitmap
+                                                                          End Sub)
 
-            AddThumbnail(ChatRole.Opposite, imgControl)
+        AddThumbnail(role, imgControl)
         'End If
     End Sub
 
@@ -192,7 +209,7 @@ Public Class ChatBox
         NewState(ChatState.FileReceived, filePath)
 
         ' display image
-        DisplayImageIfValid(filePath)
+        DisplayImageIfValid(ChatRole.Opposite, filePath)
         '.IsValidImageFile()
     End Sub
 
