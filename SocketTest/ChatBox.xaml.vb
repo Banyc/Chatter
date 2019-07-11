@@ -52,60 +52,61 @@ Public Class ChatBox
     Private Sub AddThumbnail(sender As ChatRole, img As Image, time As DateTime)
         ' <https://stackoverflow.com/questions/33466546/the-calling-thread-cannot-access-this-object-because-a-different-thread-owns-it>
         Me.Dispatcher.
-            Invoke(Windows.Threading.DispatcherPriority.Normal, Sub()
-                                                                    Dim stateLine = New Run(String.Format("{0}", time.ToString()))
-                                                                    stateLine.Foreground = Brushes.LightGray
+            Invoke(Windows.Threading.DispatcherPriority.Normal,
+                   Sub()
+                       Dim stateLine = New Run(String.Format("{0}", time.ToString()))
+                       stateLine.Foreground = Brushes.LightGray
 
-                                                                    Dim stateParag = New Paragraph()  ' deals with the state message
-                                                                    Dim textParag = New Paragraph()  ' deals with the new text message
+                       Dim stateParag = New Paragraph()  ' deals with the state message
+                       Dim textParag = New Paragraph()  ' deals with the new text message
 
-                                                                    'parag.Inlines.Add(emptyLine)
-                                                                    stateParag.Inlines.Add(stateLine)
-                                                                    stateParag.Margin = New Thickness(5, 10, 5, 5)
+                       'parag.Inlines.Add(emptyLine)
+                       stateParag.Inlines.Add(stateLine)
+                       stateParag.Margin = New Thickness(5, 10, 5, 5)
 
-                                                                    Dim maxHeight = scroll.ActualHeight * 3 / 4
-                                                                    Dim maxWidth = txtMessage.ActualWidth * 3 / 4
+                       Dim maxHeight = scroll.ActualHeight * 3 / 4
+                       Dim maxWidth = txtMessage.ActualWidth * 3 / 4
 
-                                                                    If img.Source.Width < maxWidth And img.Source.Height < maxHeight Then
-                                                                        img.Stretch = Stretch.None
-                                                                    Else
-                                                                        img.Stretch = Stretch.Uniform
-                                                                    End If
+                       If img.Source.Width < maxWidth And img.Source.Height < maxHeight Then
+                           img.Stretch = Stretch.None
+                       Else
+                           img.Stretch = Stretch.Uniform
+                       End If
 
-                                                                    img.MaxHeight = maxHeight
-                                                                    img.MaxWidth = maxWidth
+                       img.MaxHeight = maxHeight
+                       img.MaxWidth = maxWidth
 
-                                                                    textParag.Inlines.Add(img)
-                                                                    textParag.Margin = New Thickness(5, 5, 5, 10)
+                       textParag.Inlines.Add(img)
+                       textParag.Margin = New Thickness(5, 5, 5, 10)
 
-                                                                    Select Case sender
-                                                                        Case ChatRole.System
-                                                                            stateParag.TextAlignment = TextAlignment.Center
-                                                                            textParag.TextAlignment = TextAlignment.Center
+                       Select Case sender
+                           Case ChatRole.System
+                               stateParag.TextAlignment = TextAlignment.Center
+                               textParag.TextAlignment = TextAlignment.Center
                                                                             'img.HorizontalAlignment = HorizontalAlignment.Center
 
-                                                                        Case ChatRole.Opposite
-                                                                            stateParag.TextAlignment = TextAlignment.Left
-                                                                            textParag.TextAlignment = TextAlignment.Left
+                           Case ChatRole.Opposite
+                               stateParag.TextAlignment = TextAlignment.Left
+                               textParag.TextAlignment = TextAlignment.Left
                                                                             'img.HorizontalAlignment = HorizontalAlignment.Left
 
-                                                                        Case ChatRole.ThisUser
-                                                                            stateParag.TextAlignment = TextAlignment.Right
-                                                                            textParag.TextAlignment = TextAlignment.Right
-                                                                            'img.HorizontalAlignment = HorizontalAlignment.Right
+                           Case ChatRole.ThisUser
+                               stateParag.TextAlignment = TextAlignment.Right
+                               textParag.TextAlignment = TextAlignment.Right
+                               'img.HorizontalAlignment = HorizontalAlignment.Right
 
-                                                                    End Select
+                       End Select
 
-                                                                    '<https://www.wiredprairie.us/journal/2007/05/creating_wpf_flowdocuments_on.html>
-                                                                    Dim stateStream As System.IO.MemoryStream = New System.IO.MemoryStream()
-                                                                    System.Windows.Markup.XamlWriter.Save(stateParag, stateStream)
-                                                                    stateStream.Position = 0
+                       '<https://www.wiredprairie.us/journal/2007/05/creating_wpf_flowdocuments_on.html>
+                       Dim stateStream As System.IO.MemoryStream = New System.IO.MemoryStream()
+                       System.Windows.Markup.XamlWriter.Save(stateParag, stateStream)
+                       stateStream.Position = 0
 
-                                                                    Dim textStream As System.IO.MemoryStream = New System.IO.MemoryStream()
-                                                                    System.Windows.Markup.XamlWriter.Save(textParag, textStream)
-                                                                    textStream.Position = 0
+                       Dim textStream As System.IO.MemoryStream = New System.IO.MemoryStream()
+                       System.Windows.Markup.XamlWriter.Save(textParag, textStream)
+                       textStream.Position = 0
 
-                                                                    Me.Dispatcher.
+                       Me.Dispatcher.
         BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                         Sub()
                             'txtMessage.Text &= String.Format(vbCrLf & "{0} {1}" & vbCrLf & "{2}" & vbCrLf, sender.ToString(), time.ToString(), msgStr)
@@ -113,7 +114,7 @@ Public Class ChatBox
                             txtMessage.Document.Blocks.Add(System.Windows.Markup.XamlReader.Load(textStream))
                             scroll.ScrollToBottom()
                         End Sub)
-                                                                End Sub)
+                   End Sub)
     End Sub
 
     Private Sub AddTxtMessage(sender As ChatRole, msgStr As String)
@@ -213,7 +214,6 @@ Public Class ChatBox
 
         ' display image if it is a valid image
         DisplayImageIfValid(ChatRole.Opposite, filePath)
-        '.IsValidImageFile()
     End Sub
 
     Private Function SaveFile(fileBytes As Byte(), fileName As String)

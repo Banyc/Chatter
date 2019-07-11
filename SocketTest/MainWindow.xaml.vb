@@ -1,26 +1,18 @@
 ﻿Imports System.ComponentModel
 
 Class MainWindow
-    Private WithEvents _client As SocketClient
-    Private WithEvents _server As SocketListener
-    Private WithEvents _socket As SocketBase
+    Private _socket As SocketBase
+    Private _socketMng As SocketManager
     Private _IsFlashing As Boolean
 
     Public Sub New()
         InitializeComponent()
-        'plainTextPanel.Visibility = Visibility.Collapsed
         cryptoPanel.Visibility = Visibility.Collapsed
         chatBox.Visibility = Visibility.Collapsed
         _IsFlashing = False
     End Sub
 
 #Region "Events of controls"
-    'Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
-    '    If Not _socket Is Nothing Then
-    '        _socket.SendText(txtSend.Text)
-    '    End If
-    'End Sub
-
     Private Sub btnServerActivate_Click(sender As Button, e As RoutedEventArgs)
         btnClientServerActivate_Click(SocketCS.Server, sender, e)
     End Sub
@@ -33,25 +25,22 @@ Class MainWindow
         DisableServerOptions()
         DisableClientOptions()
         DisableIpTxt()
-        If _client Is Nothing Then
-            If _server Is Nothing Then
-                Select Case csType
-                    Case SocketCS.Client
-                        _client = New SocketClient(txtIpAddress.Text, Int(txtPort.Text))
-                        _socket = _client  ' mark
-                        Me.Title = "Client"
-                    Case SocketCS.Server
-                        _server = New SocketListener(txtIpAddress.Text, Int(txtPort.Text), txtExpectedIpAddress.Text)
-                        _socket = _server  ' mark
-                        Me.Title = "Server"
-                End Select
-                'plainTextPanel.Visibility = Visibility.Visible
-                cryptoPanel.Visibility = Visibility.Visible
-                CSPanel.Visibility = Visibility.Collapsed
-                cryptoPanel.SetSocket(_socket)
-                _socket.Start()
-            End If
+        If _socket Is Nothing Then
+            Select Case csType
+                Case SocketCS.Client
+                    _socket = New SocketClient(txtIpAddress.Text, Int(txtPort.Text))
+                    Me.Title = "Client"
+                Case SocketCS.Server
+                    _socket = New SocketListener(txtIpAddress.Text, Int(txtPort.Text), txtExpectedIpAddress.Text)
+                    Me.Title = "Server"
+            End Select
+            cryptoPanel.Visibility = Visibility.Visible
+            CSPanel.Visibility = Visibility.Collapsed
+            cryptoPanel.SetSocket(_socket)
+            _socket.Start()
         End If
+        '_socketMng = New SocketManager(_socket, Me, chatBox, cryptoPanel)
+        _socketMng = New SocketManager(_socket, Me, chatBox)
     End Sub
 
     Private Sub MainWindow_Activated(sender As Object, e As EventArgs) Handles Me.Activated
@@ -62,74 +51,18 @@ Class MainWindow
     End Sub
 
     Private Sub MainWindow_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        If Not _server Is Nothing Then
-            _server.Shutdown()
+        If Not _socket Is Nothing Then
+            _socket.Shutdown()
         End If
-        If Not _client Is Nothing Then
-            _client.Shutdown()
-        End If
-    End Sub
-#End Region
-
-#Region "socket events"  ' Inside which should let dispatcher invoke procedures concerning GUI
-    Private Sub _socket_ReceivedText() Handles _socket.ReceiveText
-        Receive(_socket)
-        FlashTaskbar()
-    End Sub
-
-    Private Sub _socket_ReceivedFeedBack(localContentPack As AesLocalPackage) Handles _socket.ReceivedFeedBack
-        Select Case localContentPack.AesContentPack.Kind
-            Case AesContentKind.Text
-                chatBox.MyMessage(CType(localContentPack.AesContentPack, AesTextPackage).Text)
-            Case AesContentKind.File
-                chatBox.NewState(ChatState.FileSent, CType(localContentPack, AesLocalFilePackage).FilePath)
-                chatBox.DisplayImageIfValid(ChatRole.ThisUser, CType(localContentPack, AesLocalFilePackage).FilePath)
-        End Select
-    End Sub
-
-    Private Sub _socket_Connected() Handles _socket.Connected
-        Connected(_socket)
-        FlashTaskbar()
-    End Sub
-
-    Private Sub _socket_Encrypted() Handles _socket.Encrypted
-        Encrypted(_socket)
-    End Sub
-
-    Private Sub _socket_Disconnected() Handles _socket.Disconnected
-        Disconnected(_socket)
-        FlashTaskbar()
-    End Sub
-
-    Private Sub _socket_ReceivedFile(fileBytes As Byte(), fileName As String) Handles _socket.ReceivedFile
-        chatBox.HandleReceivedFile(fileBytes, fileName)
     End Sub
 #End Region
 
 #Region "functions"
-    Private Sub Receive(endPoint As SocketBase)
-        'MessageBox.Show(endPoint.GetEarlyMsg(), endPoint.EndPointType.ToString() & " received msg")
-        chatBox.NewMessage(endPoint.GetEarlyMsg())
-    End Sub
-
-    Private Sub Connected(endPoint As SocketBase)
-        'MessageBox.Show(String.Format("RemoteEndPoint:" & vbCrLf & "{0}", endPoint.GetRemoteEndPoint()), endPoint.EndPointType.ToString() & ", Connect Done")
-        chatBox.NewState(ChatState.Connected, String.Format("RemoteEndPoint:" & vbCrLf & "{0}", endPoint.GetRemoteEndPoint()))
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ChatState.Connected))
-    End Sub
-
-    Private Sub Encrypted(endPoint As SocketBase)
-        chatBox.NewState(ChatState.Encrypted)
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() PrepareChatBox())
-    End Sub
-
-    Private Sub Disconnected(endPoint As SocketBase)
-        chatBox.NewState(ChatState.Disconnected)
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal, Sub() UpdateUI(endPoint, ChatState.Disconnected))
-    End Sub
-
-    Private Sub UpdateUI(endPoint As SocketBase, state As ChatState)
-        Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
+    Public Sub UpdateUI_Invoke(endPoint As SocketBase, state As ChatState)
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                                  Sub()
+                                      Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
+                                  End Sub)
     End Sub
 
     Private Sub DisableIpTxt()
@@ -146,12 +79,15 @@ Class MainWindow
         btnClientActivate.IsEnabled = False
     End Sub
 
-    Private Sub PrepareChatBox()
-        loginPanel.Visibility = Visibility.Collapsed
-        chatBox.Visibility = Visibility.Visible
+    Public Sub PrepareChatBox_Invoke()
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+                                  Sub()
+                                      loginPanel.Visibility = Visibility.Collapsed
+                                      chatBox.Visibility = Visibility.Visible
+                                  End Sub)
     End Sub
 
-    Private Sub FlashTaskbar()
+    Public Sub FlashTaskbar_Invoke()
         If Not _IsFlashing Then
             Me.Dispatcher.
                 BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
@@ -161,30 +97,6 @@ Class MainWindow
                                     _IsFlashing = True
                                 End If
                             End Sub)
-        End If
-    End Sub
-#End Region
-
-#Region "SocketBase - CharBox"
-
-#Region "char box events"
-    Private Sub chatBox_SendMessage(message As String) Handles chatBox.SendMessage
-        Send(message)
-    End Sub
-
-    Private Sub chatBox_SendFile(fileBytes As Byte(), fileName As String, path As String) Handles chatBox.SendFile
-        Send(fileBytes, fileName, path)
-    End Sub
-#End Region
-    Private Sub Send(msgStr As String)
-        If Not _socket Is Nothing Then
-            _socket.SendCipherText(msgStr)
-        End If
-    End Sub
-
-    Private Sub Send(fileBytes As Byte(), fileName As String, path As String)
-        If Not _socket Is Nothing Then
-            _socket.SendFile(fileBytes, fileName, path)
         End If
     End Sub
 #End Region
@@ -240,7 +152,7 @@ Class MainWindow
         'Dim priKey As String
 
 
-        'Dim plainText As String = "assholeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        'Dim plainText As String = "aaaaa"
         'Dim cipherText As Byte()
 
         '' 1 sends to 2
@@ -303,7 +215,7 @@ Class MainWindow
         'SocketBase.IncrementBytes(bVal, 300)
 
         Me.Title = "Socket Demo"
-        PrepareChatBox()
+        PrepareChatBox_Invoke()
         chatBox.NewState(ChatState.Connected, "127.0.0.1")
         chatBox.NewMessage("Hello")
         chatBox.NewMessage("This is Mike")

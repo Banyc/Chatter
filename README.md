@@ -49,7 +49,7 @@ Class
 - "SocketBase.vb" - handling all logic of socket operations
 - "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
 - "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
-- "SocketManager.vb" - pending for releasing some code from "SocketBase.vb"
+- "SocketManager.vb" - a bridge between "SocketBase.vb" and other classes like `MainWindow` and `ChatBox`
 - "FlashWindow.vb" - shared class handling the flashing icon in task-bar
 
 Xaml
@@ -77,6 +77,10 @@ Xaml
       - ...
   - `SocketBase`
   - `FlashWindow` - shared
+  - `SocketManager` - init
+    - `SocketBase`
+    - `ChatBox`
+    <!-- - `CryptoPanel` -->
 
 PS
 

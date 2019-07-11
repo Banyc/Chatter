@@ -103,6 +103,7 @@
     <Compile Include="SocketBase.vb" />
     <Compile Include="SocketClient.vb" />
     <Compile Include="SocketListener.vb" />
+    <Compile Include="SocketManager.vb" />
     <Page Include="ChatBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
