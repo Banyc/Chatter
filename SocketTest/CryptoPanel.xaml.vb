@@ -133,7 +133,7 @@
 
 #Region "File Drop on panel"
     ' this user drop a file on `Me`
-    Private Sub CryptoPanel_Drop(sender As Object, e As DragEventArgs)
+    Private Sub FileDropZone_Drop(sender As Object, e As DragEventArgs)
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
             SetKeysFromFile(files)
@@ -152,6 +152,18 @@
                 End If
             End If
         Next
+    End Sub
+
+    Private Sub CryptoPanel_PreviewDragEnter(sender As Object, e As DragEventArgs) Handles Me.PreviewDragEnter
+        FileDropZone.Visibility = Visibility.Visible
+    End Sub
+
+    Private Sub CryptoPanel_PreviewDragLeave(sender As Object, e As DragEventArgs) Handles Me.PreviewDragLeave
+        FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+
+    Private Sub CryptoPanel_PreviewDrop(sender As Object, e As DragEventArgs) Handles Me.PreviewDrop
+        FileDropZone.Visibility = Visibility.Hidden
     End Sub
 #End Region
 End Class

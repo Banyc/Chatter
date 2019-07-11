@@ -2,7 +2,7 @@
 
 Public Enum AesContentKind
     Text
-    Image  ' TODO
+    Image  ' Abandoned. Merged into `File`
     File
     Feedback
 End Enum
@@ -47,7 +47,7 @@ Public Class AesImagePackage : Inherits AesContentPackage
 End Class
 #End Region
 
-#Region "Not-sending packages"
+#Region "Serial Classes - Not-sending packages"
 ' the content package here contains private data
 ' only used to temperately store the package in local
 Public Class AesLocalPackage
@@ -65,6 +65,7 @@ Public Class AesLocalFilePackage : Inherits AesLocalPackage
 End Class
 #End Region
 
+' Containing procedures that convert between AesContentPackage and JSON
 Public Class AesContentFraming
     Private Sub New()
         ' Preventing the class from being instantiated

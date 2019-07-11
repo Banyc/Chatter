@@ -293,7 +293,6 @@ Public MustInherit Class SocketBase
 
     ' Should be run in thread
     Private Sub Receive(handler As Socket)
-
         If Not handler Is Nothing Then
             ' Data buffer for incoming data.
             Dim bytes() As Byte = New [Byte](262144 - 1) {}  ' 256K
@@ -308,9 +307,9 @@ Public MustInherit Class SocketBase
                 ' decode the incoming stream
                 _messageFramer.DecodeMsgFrame(bytes)
 
-#If Not DEBUG Then
+                '#If Not DEBUG Then
             Catch ex As SocketException
-#End If
+                '#End If
             Catch ex As SeeminglyDosAttackException
                 Shutdown()
 
@@ -324,9 +323,7 @@ Public MustInherit Class SocketBase
                 Shutdown()
 #End If
             End Try
-            'End While
         End If
-
     End Sub
 
     Private Sub ReceivedCipher(bytes As Byte()) Handles _messageFramer.ReceivedCipher
@@ -405,6 +402,7 @@ Public MustInherit Class SocketBase
 
         Else ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
             ' TODO: ERROR
+            MessageBox.Show("Message received is encrypted while there is no key to decrypt it.")
         End If
     End Sub
     Private Sub ReceivedPlaintext(text As String) Handles _messageFramer.ReceivedPlaintext
@@ -460,7 +458,6 @@ Public MustInherit Class SocketBase
         _connectDone.Set()
         Dim thread As New Thread(
         Sub()
-            'MessageBox.Show(String.Format("RemoteEndPoint:" & vbCrLf & "{0}", _handler.RemoteEndPoint.ToString()), _socketCS.ToString() & ", " & "Connect Done")
             RaiseEvent Connected()
             thread.Abort()
         End Sub)

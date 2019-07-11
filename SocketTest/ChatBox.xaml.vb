@@ -17,6 +17,8 @@ Public Class ChatBox
     Public Event SendFile(fileBytes As Byte(), fileName As String, path As String)
     Public Event SendImage(imageBytes As Byte())
 
+    Private Const SAVEPATH As String = "./Received Files/"
+
     Public Sub New()
         InitializeComponent()
     End Sub
@@ -169,6 +171,7 @@ Public Class ChatBox
                         End Sub)
     End Sub
 
+    ' The image in the file path will be locked
     Public Sub DisplayImageIfValid(role As ChatRole, imagePath As String)
         'If String.Equals(IO.Path.GetExtension(imagePath), ".jpg", StringComparison.CurrentCultureIgnoreCase) Then
 
@@ -208,18 +211,16 @@ Public Class ChatBox
         ' display new state on screen
         NewState(ChatState.FileReceived, filePath)
 
-        ' display image
+        ' display image if it is a valid image
         DisplayImageIfValid(ChatRole.Opposite, filePath)
         '.IsValidImageFile()
     End Sub
 
     Private Function SaveFile(fileBytes As Byte(), fileName As String)
-        Dim fileDirectory As String = "./Received Files/"
-
         Dim fileBaseNameNoExt As String = IO.Path.GetFileNameWithoutExtension(fileName)
         Dim ext As String = IO.Path.GetExtension(fileName)  ' start with '.' if extension exists
 
-        Dim filePath As String = IO.Path.Combine(fileDirectory, fileName)
+        Dim filePath As String = IO.Path.Combine(SAVEPATH, fileName)
 
         ' create directory if does not exist
         Dim fileInfo As IO.FileInfo
@@ -231,9 +232,9 @@ Public Class ChatBox
         While fileInfo.Exists
             renameID += 1
             If ext IsNot Nothing Then
-                filePath = IO.Path.Combine(fileDirectory, String.Format("{0}.{1}{2}", fileBaseNameNoExt, renameID.ToString(), ext))
+                filePath = IO.Path.Combine(SAVEPATH, String.Format("{0}.{1}{2}", fileBaseNameNoExt, renameID.ToString(), ext))
             Else
-                filePath = IO.Path.Combine(fileDirectory, String.Format("{0}.{1}", fileBaseNameNoExt, renameID.ToString()))
+                filePath = IO.Path.Combine(SAVEPATH, String.Format("{0}.{1}", fileBaseNameNoExt, renameID.ToString()))
             End If
             fileInfo = New IO.FileInfo(filePath)
         End While
@@ -280,9 +281,6 @@ Public Class ChatBox
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
             For Each file In files
-                'If String.Equals(IO.Path.GetExtension(file), "jpg", StringComparison.CurrentCultureIgnoreCase) Then
-                '    RaiseEvent SendImage(ReadFile(file))
-                'End If
                 RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file), file)
             Next
         End If
