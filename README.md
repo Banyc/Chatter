@@ -403,3 +403,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] Send files
 - [x] Send image
 - [ ] Multi socket connections for file transmission
+- [ ] Apply MVC pattern
