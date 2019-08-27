@@ -16,7 +16,7 @@ Public Class SocketListener
     ' Incoming data from the client.  
     Private data As String = Nothing
 
-    Public Sub New(ipStr As String, port As Integer, expectedIpStr As String)
+    Public Sub New(ipStr As String, port As Integer, Optional expectedIpStr As String = Nothing)
         MyBase.New(ipStr, port, SocketCS.Server)
 
         If expectedIpStr = Nothing Then  ' it is wrong to express like `If expectedIpStr is Nothing Then`

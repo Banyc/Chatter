@@ -42,8 +42,6 @@ Public MustInherit Class SocketBase
         End Set
     End Property
 
-    Private _socketCS As SocketCS
-
     Private _handler As Socket = Nothing
 
     ' ManualResetEvent instances signal completion.
@@ -88,11 +86,10 @@ Public MustInherit Class SocketBase
     Protected Sub New(ip As IPAddress, port As Integer, socketCS As SocketCS)
         _ip = ip
         _port = port
-        EndPointType = socketCS
+        Me.EndPointType = socketCS
         _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
         _textReceivedQueue = New Queue(Of String)
         _byteQueue = New Queue(Of Byte())
-        _socketCS = socketCS
         _RSA = New RsaApi()
 
         _handshakeTimes = 0
@@ -314,12 +311,12 @@ Public MustInherit Class SocketBase
                 Shutdown()
 
             Catch ex As ThreadAbortException
-                'MessageBox.Show(ex.ToString(), _socketCS.ToString())  ' TODO: comment out this
+                'MessageBox.Show(ex.ToString(), me.endpointtype.ToString())  ' TODO: comment out this
                 Shutdown()
                 'Exit While
 #If Not DEBUG Then
             Catch ex As Exception
-                MessageBox.Show(ex.ToString(), _socketCS.ToString())
+                MessageBox.Show(ex.ToString(), me.endpointtype.ToString())
                 Shutdown()
 #End If
             End Try
@@ -502,7 +499,7 @@ Public MustInherit Class SocketBase
             End If
 
 #If DEBUG Then
-            MessageBox.Show("Shutdowned", _socketCS.ToString())
+            MessageBox.Show("Shutdowned", Me.EndPointType.ToString())
 #End If
         End If
     End Sub
