@@ -1,4 +1,6 @@
-﻿Public Enum ChatRole
+﻿Imports System.ComponentModel
+
+Public Enum ChatRole
     System
     Opposite
     ThisUser
@@ -19,9 +21,38 @@ Public Class ChatBox
 
     Private Const SAVEPATH As String = "./Received Files/"
 
+    Private _socket As SocketBase
+
     Public Sub New()
         InitializeComponent()
     End Sub
+    Public Sub New(socket As SocketBase)
+        _socket = socket
+        ' message from the opposite
+        AddHandler _socket.ReceivedText, AddressOf NewMessage
+        AddHandler _socket.ReceivedFile, AddressOf HandleReceivedFile
+        AddHandler _socket.Disconnected, AddressOf UpdateDisconnectedState
+        ' My own message
+        AddHandler _socket.ReceivedFeedBack, AddressOf HandleMySentMsg
+
+        InitializeComponent()
+    End Sub
+
+#Region "Response to socket"
+    Private Sub HandleMySentMsg(localContentPack As AesLocalPackage)
+        Select Case localContentPack.AesContentPack.Kind
+            Case AesContentKind.Text
+                Me.MyMessage(CType(localContentPack.AesContentPack, AesTextPackage).Text)
+            Case AesContentKind.File
+                Me.NewState(ChatState.FileSent, CType(localContentPack, AesLocalFilePackage).FilePath)
+                Me.DisplayImageIfValid(ChatRole.ThisUser, CType(localContentPack, AesLocalFilePackage).FilePath)
+        End Select
+    End Sub
+
+    Private Sub UpdateDisconnectedState()
+        NewState(ChatState.Disconnected)
+    End Sub
+#End Region
 
 #Region "Procedures"
     ' the text should be put on the screen when the opposite received it and send back the feedback
@@ -42,6 +73,14 @@ Public Class ChatBox
         End If
 
         AddTxtMessage(ChatRole.System, additionalMsg)
+    End Sub
+
+    Private Sub NewThumbnail(img As Image)
+        AddThumbnail(ChatRole.Opposite, img)
+    End Sub
+
+    Private Sub MyThumbnail(img As Image)
+        AddThumbnail(ChatRole.ThisUser, img)
     End Sub
 
     Private Sub AddThumbnail(sender As ChatRole, img As Image)
@@ -253,7 +292,11 @@ Public Class ChatBox
 
 #Region "Events"
     Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
-        RaiseEvent SendMessage(txtInput.Text)
+        If _socket IsNot Nothing Then
+            _socket.SendCipherText(txtInput.Text)
+        Else
+            RaiseEvent SendMessage(txtInput.Text)
+        End If
         'AddTxtMessage(ChatRole.ThisUser, txtInput.Text)  ' the text should be put on the screen when the opposite received it and send back the feedback
         txtInput.Clear()
         e.Handled = True
@@ -281,7 +324,11 @@ Public Class ChatBox
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
             For Each file In files
-                RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file), file)
+                If _socket IsNot Nothing Then
+                    _socket.SendFile(ReadFile(file), IO.Path.GetFileName(file), file)
+                Else
+                    RaiseEvent SendFile(ReadFile(file), IO.Path.GetFileName(file), file)
+                End If
             Next
         End If
     End Sub
@@ -296,6 +343,12 @@ Public Class ChatBox
 
     Private Sub ChatBox_PreviewDrop(sender As Object, e As DragEventArgs) Handles Me.PreviewDrop
         FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+
+    Private Sub ChatBox_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
+        If _socket IsNot Nothing Then
+            _socket.Shutdown()
+        End If
     End Sub
 
 #End Region

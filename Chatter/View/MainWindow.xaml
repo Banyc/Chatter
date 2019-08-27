@@ -3,96 +3,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SocketTest"
+        xmlns:local="clr-namespace:Chatter"
         mc:Ignorable="d"
         Title="Socket" Height="450" Width="800"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize">
     <Grid>
         <Grid Name="loginPanel">
-            
-            <StackPanel>  <!--login panel-->
-                <StackPanel Margin="20,20,20,0">  <!-- iP addresses -->
-                    <StackPanel Margin="0,0,0,10">
-                        <TextBlock Foreground="Gray">
-                            Server Address:
-                        </TextBlock>
-                        <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
-                   
-                            <TextBox Name="txtIpAddress">
-                                127.0.0.1
-                            </TextBox>
-                            <TextBlock Text=": "/>
-                            <TextBox Name="txtPort">
-                                11000
-                            </TextBox>
-                    
-                        </StackPanel>
-                    
-                    </StackPanel>
-                    <StackPanel Margin="0, 0, 0, 10">
-                        <TextBlock TextWrapping="Wrap" Foreground="Gray">
-                            Expected Client Address: 
-                        </TextBlock>
-                        <StackPanel Orientation="Horizontal" >  <!--IP : Port-->
-                            <TextBox Name="txtExpectedIpAddress" MinWidth="10">
-                                
-                            </TextBox>
-                            <TextBlock Text=": "/>
-                            <TextBlock>
-                                *
-                            </TextBlock>
-                        </StackPanel>
-                    </StackPanel>
 
-                </StackPanel>
-                <StackPanel Name="CSPanel" Orientation="Horizontal" Margin="10">  <!-- select role as client or server -->
-                    <StackPanel Name="ClientPanel" Margin="10">  <!--Client panel-->
-                        <!--<TextBlock Foreground="Gray">
-                            Client
-                        </TextBlock>-->
-                        <Button Name="btnClientActivate"
-                                    Height="50" Width="100"
-                                    Click="btnClientActivate_Click">
-                            Client
-                        </Button>
-                    </StackPanel>
-                    <StackPanel Name="ServerPanel" Margin="10">  <!-- server panel -->
-                        <!--<TextBlock Foreground="Gray">
-                            Server
-                        </TextBlock>-->
-                        <Button Name="btnServerActivate"
-                                Height="50" Width="100"
-                                Click="btnServerActivate_Click">
-                            Server
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
-                
-                <!--<StackPanel Name="plainTextPanel" Margin="10">  --><!-- plain text sender --><!--
-                    <Button Name="btnSend"
-                            Height="50"
-                            Click="btnSend_Click">
-                        btnSend
-                    </Button>
-                    <TextBox Name="txtSend">
-                        txtSend
-                    </TextBox>
-                </StackPanel>-->
+            <StackPanel>
+                <Button Click="btnBuildKeyPair_Click">
+                    Make New Key Pair
+                </Button>
 
-                <local:CryptoPanel x:Name="cryptoPanel" Margin="10,0,10,0">
-                    
-                </local:CryptoPanel>
-                                
-                <StackPanel>  <!--TEST PANEL-->
+                <StackPanel>
+                    <!--TEST PANEL-->
                     <Button Click="btnTest_Click">
                         test.1
                     </Button>
                 </StackPanel>
             </StackPanel>
         </Grid>
-        <local:ChatBox x:Name="chatBox" Margin="10">
-
-        </local:ChatBox>
     </Grid>
 </Window>

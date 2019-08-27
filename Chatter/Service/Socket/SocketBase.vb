@@ -12,7 +12,7 @@ End Enum
 
 Public MustInherit Class SocketBase
 #Region "Event Declaration"
-    Public Event ReceiveText()
+    Public Event ReceivedText(text As String)
     Public Event Connected()
     Public Event OpppsiteStandby()
     Public Event SendedSessionKey()
@@ -25,6 +25,7 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Variables Decl"
+    Private _config As SocketSettingsFramework
     Public ReadOnly Property EndPointType As SocketCS
 
     Private _ip As IPAddress
@@ -47,6 +48,7 @@ Public MustInherit Class SocketBase
     ' ManualResetEvent instances signal completion.
     Private _connectDone As New ManualResetEvent(False)
     Private _encryptDone As New ManualResetEvent(False)
+    Private _receivedStandbyMsg As New ManualResetEvent(False)
     Private _sendSessionKeyDone As New ManualResetEvent(False)
     Private _receiveSessionKeyDone As New ManualResetEvent(False)
     Private _handshakeTimes As Integer
@@ -80,6 +82,10 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Contructor"
+    Protected Sub New(config As SocketSettingsFramework)
+        Me.New(config.IP, config.Port, config.Role)
+        _config = config
+    End Sub
     Protected Sub New(ipStr As String, port As Integer, socketCS As SocketCS)
         Me.New(IPAddress.Parse(ipStr), port, socketCS)
     End Sub
@@ -108,7 +114,7 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "MustOverride"
-    Public MustOverride Sub Start()
+    Public MustOverride Sub BuildConnection()
 #End Region
 
 #Region "on transmission / send"
@@ -169,7 +175,7 @@ Public MustInherit Class SocketBase
     End Sub
 
     ' in plain text
-    Private Sub SendStandbyMsg()
+    Public Sub SendStandbyMsg()
         Dim msgBytes As Byte() = MessageFraming.SendStandby()
         _SendBytes(_handler, msgBytes)
     End Sub
@@ -268,16 +274,6 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "on reception"
-    Private Sub RaiseTextReceivedEventThread()
-        ' raise event when the decrypted message is reached
-        Dim eventThread As New Thread(
-        Sub()
-            RaiseEvent ReceiveText()
-            eventThread.Abort()
-        End Sub)
-        eventThread.Start()
-    End Sub
-
     Private Sub RaiseStandbyEventThread()
         ' updates UI
         Dim eventThread As New Thread(
@@ -367,7 +363,7 @@ Public MustInherit Class SocketBase
                     _textReceivedQueue.Enqueue(textPack.Text)
 
                     ' further handle the file
-                    RaiseTextReceivedEventThread()
+                    RaiseEvent ReceivedText(textPack.Text)
 
                 Case AesContentKind.Feedback
                     ' determine package type
@@ -414,6 +410,7 @@ Public MustInherit Class SocketBase
     Private Sub ReceivedPlaintextSignal(signal As MessagePlaintextSignal) Handles _messageFramer.ReceivedPlaintextSignal
         Select Case signal
             Case MessagePlaintextSignal.Standby
+                _receivedStandbyMsg.Set()
                 RaiseStandbyEventThread()
                 _IsOppositeStandby = True
         End Select
@@ -422,13 +419,7 @@ Public MustInherit Class SocketBase
     Private Sub ReceivedEncryptedSessionKey(encryptedSessionKey As Byte()) Handles _messageFramer.ReceivedEncryptedSessionKey
         If Not _encryptDone.WaitOne(0) Then ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
 
-            '' the size of the byte() must be the multiple of 16?
-            'Dim encryptedSessionKey(bytes.Length - 1) As Byte
-
-            'Array.Copy(bytes, encryptedSessionKey, encryptedSessionKey.Length)
-
             _byteQueue.Enqueue(encryptedSessionKey)  ' stores encrypted session key and IV
-
 
             ' When the queue received encrypted session key and IV
             If _byteQueue.Count >= 2 Then
@@ -550,28 +541,6 @@ Public MustInherit Class SocketBase
         End If
     End Function
 
-    Private Shared Function MessageTypeStart(state As String) As String
-        Return "<" & state & ">"
-    End Function
-
-    Private Shared Function MessageTypeEnd(state As String) As String
-        Return "</" & state & ">"
-    End Function
-
-    Private Shared Function MessageTypeBody(state As String) As String
-        Return "<" & state & "/>"
-    End Function
-
-    ' Only matches the first occurence
-    Private Shared Function GetCertainContent(receivedMessage As String, state As String) As String
-        Dim startIndex As Integer
-        Dim endIndex As Integer
-        startIndex = receivedMessage.IndexOf(MessageTypeStart(state)) + MessageTypeStart(state).Length
-        endIndex = receivedMessage.LastIndexOf(MessageTypeEnd(state))
-        Return receivedMessage.Substring(startIndex, endIndex - startIndex)
-    End Function
-
-
 #End Region
 
 #Region "three-way-handshake"
@@ -621,7 +590,7 @@ Public MustInherit Class SocketBase
         End If
     End Sub
 
-    Private Sub SendTunnalRequest()
+    Public Sub SendTunnalRequest()
         If _RSA.HasPubKey Then
             _handshakeTimes += 1
 

@@ -26,7 +26,7 @@ Public Class SocketListener
         End If
     End Sub
 
-    Public Overrides Sub Start()
+    Public Overrides Sub BuildConnection()
         _buildThread = New Thread(
             Sub()
                 ' Connect to a remote device. 

@@ -13,7 +13,7 @@ Public Class SocketClient
         MyBase.New(ipStr, port, SocketCS.Client)
     End Sub
 
-    Public Overrides Sub Start()
+    Public Overrides Sub BuildConnection()
         _connectThread = New Thread(
             Sub()
                 ' Connect to a remote device. 

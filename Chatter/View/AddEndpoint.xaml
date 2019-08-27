@@ -1,0 +1,59 @@
+﻿<Window x:Class="AddEndpoint"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Chatter"
+        mc:Ignorable="d"
+        Title="AddEndpoint" Height="450" Width="800">
+    <Grid>
+        <StackPanel>
+            <TextBlock>
+                IP
+            </TextBlock>
+            <TextBox x:Name="IP">
+                127.0.0.1
+            </TextBox>
+            <TextBox x:Name="Port">
+                11000
+            </TextBox>
+            <TextBlock>
+                Your role
+            </TextBlock>
+            <ComboBox Name="Role">
+                <ComboBoxItem>
+                    Client
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    Server
+                </ComboBoxItem>
+            </ComboBox>
+            <TextBlock>
+                Path to Your Private Key
+            </TextBlock>
+            <TextBox x:Name="PathToPriKey">
+                ./debugKeys/priKey
+            </TextBox>
+            <TextBlock>
+                Path to Other's Public Key
+            </TextBlock>
+            <TextBox x:Name="PathToPubKey">
+                ./debugKeys/pubKey
+            </TextBox>
+            <TextBlock>
+                Seed
+            </TextBlock>
+            <TextBox x:Name="Seed">
+                123456
+            </TextBox>
+
+            <Button Click="btnBuildSocket_Click">
+                Ready to connect
+            </Button>
+            <Button Click="btnRoloadChatBox_Click">
+                Reload Chat Box
+            </Button>
+        </StackPanel>
+        
+    </Grid>
+</Window>
