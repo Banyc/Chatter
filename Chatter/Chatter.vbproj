@@ -89,30 +89,30 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="AesApi.vb" />
-    <Compile Include="AesContentFraming.vb" />
-    <Compile Include="ChatBox.xaml.vb">
+    <Compile Include="Service\Crypto\AesApi.vb" />
+    <Compile Include="Service\Protocal\AesContentFraming.vb" />
+    <Compile Include="View\ChatBox.xaml.vb">
       <DependentUpon>ChatBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CryptoPanel.xaml.vb">
+    <Compile Include="View\CryptoPanel.xaml.vb">
       <DependentUpon>CryptoPanel.xaml</DependentUpon>
     </Compile>
-    <Compile Include="FlashWindow.vb" />
-    <Compile Include="RsaApi.vb" />
-    <Compile Include="MessageFraming.vb" />
-    <Compile Include="SocketBase.vb" />
-    <Compile Include="SocketClient.vb" />
-    <Compile Include="SocketListener.vb" />
-    <Compile Include="SocketManager.vb" />
-    <Page Include="ChatBox.xaml">
+    <Compile Include="Service\System\FlashWindow.vb" />
+    <Compile Include="Service\Crypto\RsaApi.vb" />
+    <Compile Include="Service\Protocal\MessageFraming.vb" />
+    <Compile Include="Service\Socket\SocketBase.vb" />
+    <Compile Include="Service\Socket\SocketClient.vb" />
+    <Compile Include="Service\Socket\SocketListener.vb" />
+    <Compile Include="Service\Socket\SocketManager.vb" />
+    <Page Include="View\ChatBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CryptoPanel.xaml">
+    <Page Include="View\CryptoPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainWindow.xaml">
+    <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -120,7 +120,7 @@
       <DependentUpon>Application.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MainWindow.xaml.vb">
+    <Compile Include="View\MainWindow.xaml.vb">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
