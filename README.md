@@ -390,7 +390,7 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] check if the opposite received the key
 - [x] check if the opposite received the message
 - [x] break the limit of the length of each message
-- [ ] open once, connect many times
+- [x] open once, connect many times
 - [x] server bans illegal connections and still keeps alive listening
 - [ ] change session key during the same session
 - [ ] reduce the three-time handshakes to just once
@@ -404,3 +404,6 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] Send image
 - [ ] Multi socket connections for file transmission
 - [ ] Apply MVC pattern
+- [ ] Save configuration
+- [ ] Multiple Socket connections
+- [ ] Make the Three-way handshake service independence from `SocketBase`
