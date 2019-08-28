@@ -406,5 +406,6 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] Apply MVC pattern
 - [ ] Save configuration
 - [ ] Multiple Socket connections for different users
-- [ ] Refactor `SocketBase`
-  - [ ] Make the Three-way handshake service independence from `SocketBase`
+- [ ] Refactor `SocketBase` to accepting middle-wares
+- [ ] Make the Three-way handshake service independence from `SocketBase`
+- [ ] Make encryption to be a middleware
