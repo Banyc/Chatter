@@ -90,7 +90,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Service\Crypto\AesApi.vb" />
-    <Compile Include="Service\Protocal\AesContentFraming.vb" />
+    <Compile Include="Service\Protocol\AesContentFraming.vb" />
     <Compile Include="Service\Socket\SocketBuilder.vb" />
     <Compile Include="Service\Socket\SocketSettingsFramework.vb" />
     <Compile Include="View\AddEndpoint.xaml.vb">
@@ -99,12 +99,9 @@
     <Compile Include="View\ChatBox.xaml.vb">
       <DependentUpon>ChatBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\CryptoPanel.xaml.vb">
-      <DependentUpon>CryptoPanel.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Service\System\FlashWindow.vb" />
     <Compile Include="Service\Crypto\RsaApi.vb" />
-    <Compile Include="Service\Protocal\MessageFraming.vb" />
+    <Compile Include="Service\Protocol\MessageFraming.vb" />
     <Compile Include="Service\Socket\SocketBase.vb" />
     <Compile Include="Service\Socket\SocketClient.vb" />
     <Compile Include="Service\Socket\SocketListener.vb" />
@@ -113,10 +110,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\ChatBox.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="View\CryptoPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -50,7 +50,6 @@ Public MustInherit Class SocketBase
     Private _encryptDone As New ManualResetEvent(False)
     Private _receivedStandbyMsg As New ManualResetEvent(False)
     Private _sendSessionKeyDone As New ManualResetEvent(False)
-    Private _receiveSessionKeyDone As New ManualResetEvent(False)
     Private _handshakeTimes As Integer
 
     ' Thread pointers
@@ -552,7 +551,6 @@ Public MustInherit Class SocketBase
     ' to decrypt the session key and check it and even save it if necessary
     Private Sub ReceiveTunnalRequest(encryptedKey As Byte(), encryptedIV As Byte())
         _handshakeTimes += 1
-        _receiveSessionKeyDone.Set()
 
         Dim decryptedKey As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedKey), _handshakeTimes)
         Dim decryptedIV As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedIV), _handshakeTimes)
