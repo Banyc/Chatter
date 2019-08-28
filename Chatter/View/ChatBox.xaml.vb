@@ -36,6 +36,7 @@ Public Class ChatBox
         AddHandler _socket.ReceivedFeedBack, AddressOf HandleMySentMsg
 
         InitializeComponent()
+        Me.Title = _socket.GetRemoteEndPoint()
     End Sub
 
 #Region "Response to socket"

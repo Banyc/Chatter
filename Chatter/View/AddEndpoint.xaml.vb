@@ -17,6 +17,7 @@ Public Class AddEndpoint
         Dim config As New SocketSettingsFramework()
         config.IP = IP.Text
         config.Port = Port.Text
+        config.ExpectedIP = ExpectedIP.Text
         config.Role = Role.SelectedIndex
         config.Seed = Seed.Text
         config.PrivateKeyPath = PathToPriKey.Text

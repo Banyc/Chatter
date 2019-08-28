@@ -405,5 +405,6 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] Multi socket connections for file transmission
 - [ ] Apply MVC pattern
 - [ ] Save configuration
-- [ ] Multiple Socket connections
-- [ ] Make the Three-way handshake service independence from `SocketBase`
+- [ ] Multiple Socket connections for different users
+- [ ] Refactor `SocketBase`
+  - [ ] Make the Three-way handshake service independence from `SocketBase`

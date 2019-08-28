@@ -4,13 +4,16 @@
     Public Event BuildDone(socket As SocketBase)
 
     Public Sub AsyncBuild(config As SocketSettingsFramework)
+        If _socket IsNot Nothing AndAlso _socket.IsShutdown Then
+            _socket = Nothing
+        End If
         If _socket Is Nothing Then
             _config = config
             Select Case config.Role
                 Case SocketCS.Client
                     _socket = New SocketClient(config.IP, config.Port)
                 Case SocketCS.Server
-                    _socket = New SocketListener(config.IP, config.Port)
+                    _socket = New SocketListener(config.IP, config.Port, config.ExpectedIP)
             End Select
             If _socket IsNot Nothing Then
                 InitCryptoFacility()

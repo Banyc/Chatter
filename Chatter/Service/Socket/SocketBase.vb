@@ -143,13 +143,6 @@ Public MustInherit Class SocketBase
         SendCipher(contentPack, localPack)
     End Sub
 
-    'Public Sub SendImage(imageBytes As Byte())
-    '    Dim contentPack = New AesImagePackage()
-    '    contentPack.ImageBytes = imageBytes
-
-    '    SendCipher(contentPack)
-    'End Sub
-
     ' GENERAL METHOD
     ' NOTE: DOES NOT NEED TO UPDATE `.MessageID` of `aesPack`
     Public Sub SendCipher(aesPack As AesContentPackage, localPack As AesLocalPackage)
@@ -551,7 +544,6 @@ Public MustInherit Class SocketBase
             _AES = New AesApi(seed)
             SendTunnalRequest()
         Else
-            'Send(_handler, "<STANDBY>")
             SendStandbyMsg()
         End If
     End Sub
