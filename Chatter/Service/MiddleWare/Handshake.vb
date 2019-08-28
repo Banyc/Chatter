@@ -1,4 +1,4 @@
-﻿Imports Chatter
+﻿' The handshake between endpoints is for Key exchange (exchange AES session key)
 
 Public Class Handshake : Implements IMiddleware
     Public Event DoneHandshake(aes As AesApi)
