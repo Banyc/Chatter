@@ -90,7 +90,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Service\Crypto\AesApi.vb" />
+    <Compile Include="Service\MiddleWare\IMiddleware.vb" />
     <Compile Include="Service\Protocol\AesContentFraming.vb" />
+    <Compile Include="Service\MiddleWare\Handshake.vb" />
     <Compile Include="Service\Socket\SocketBuilder.vb" />
     <Compile Include="Service\Socket\SocketSettingsFramework.vb" />
     <Compile Include="View\AddEndpoint.xaml.vb">

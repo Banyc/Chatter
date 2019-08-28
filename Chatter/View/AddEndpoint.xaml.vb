@@ -3,7 +3,7 @@
 Public Class AddEndpoint
 
     Private WithEvents _builder As New SocketBuilder()
-    Private _socket As SocketBase
+    Private WithEvents _socket As SocketBase
 
     Public Sub New()
 
@@ -54,5 +54,9 @@ Public Class AddEndpoint
         If _socket IsNot Nothing Then
             _socket.Shutdown()
         End If
+    End Sub
+
+    Private Sub _socket_Connected() Handles _socket.Connected
+        Me.Title = "Connected"
     End Sub
 End Class

@@ -15,8 +15,6 @@ Public MustInherit Class SocketBase
     Public Event ReceivedText(text As String)
     Public Event Connected()
     Public Event OpppsiteStandby()
-    Public Event SendedSessionKey()
-    Public Event ReceivedSessionKey()
     Public Event Encrypted()
     Public Event ReceivedFeedBack(contentPackage As AesLocalPackage)
     Public Event Disconnected()
@@ -25,7 +23,6 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Variables Decl"
-    Private _config As SocketSettingsFramework
     Public ReadOnly Property EndPointType As SocketCS
 
     Private _ip As IPAddress
@@ -45,12 +42,13 @@ Public MustInherit Class SocketBase
 
     Private _handler As Socket = Nothing
 
+    Private WithEvents _keyExchange As Handshake
+
     ' ManualResetEvent instances signal completion.
     Private _connectDone As New ManualResetEvent(False)
     Private _encryptDone As New ManualResetEvent(False)
     Private _receivedStandbyMsg As New ManualResetEvent(False)
     Private _sendSessionKeyDone As New ManualResetEvent(False)
-    Private _handshakeTimes As Integer
 
     ' Thread pointers
     Private _listenThread As Thread
@@ -65,7 +63,6 @@ Public MustInherit Class SocketBase
     Private _textReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
     Private _msgNotComfirmedList As Dictionary(Of Integer, AesLocalPackage)  ' stores sended messages  ' msgID : msgPackage
     'Private _msgOnScreen As List(Of String)
-    Private _byteQueue As Queue(Of Byte())  ' stores incoming bytes, containing the encrypted session key and IV, which are still bytes
 
     Private Structure MessageType
         Public Const ENDOFSTREAM As String = "EOF"  ' identification of a plain text
@@ -81,10 +78,10 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Contructor"
-    Protected Sub New(config As SocketSettingsFramework)
-        Me.New(config.IP, config.Port, config.Role)
-        _config = config
-    End Sub
+    'Protected Sub New(config As SocketSettingsFramework)
+    '    Me.New(config.IP, config.Port, config.Role)
+    '    _config = config
+    'End Sub
     Protected Sub New(ipStr As String, port As Integer, socketCS As SocketCS)
         Me.New(IPAddress.Parse(ipStr), port, socketCS)
     End Sub
@@ -94,10 +91,7 @@ Public MustInherit Class SocketBase
         Me.EndPointType = socketCS
         _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
         _textReceivedQueue = New Queue(Of String)
-        _byteQueue = New Queue(Of Byte())
         _RSA = New RsaApi()
-
-        _handshakeTimes = 0
 
         Dim rnd As New Random()
         _myMsgId = CUInt(rnd.Next())
@@ -117,11 +111,6 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "on transmission / send"
-    Public Sub SendSessionKey(encryptedSessionKey As Byte())
-        Dim msgBytes As Byte() = MessageFraming.SendEncryptedSessionKey(encryptedSessionKey)
-        _SendBytes(_handler, msgBytes)
-    End Sub
-
     Public Sub SendFile(fileBytes As Byte(), fileName As String, filePath As String)
         Dim contentPack = New AesFilePackage()
         contentPack.FileBytes = fileBytes
@@ -166,10 +155,9 @@ Public MustInherit Class SocketBase
         _msgNotComfirmedList.Add(localPack.AesContentPack.MessageID, localPack)
     End Sub
 
-    ' in plain text
     Public Sub SendStandbyMsg()
         Dim msgBytes As Byte() = MessageFraming.SendStandby()
-        _SendBytes(_handler, msgBytes)
+        _SendBytes(msgBytes)
     End Sub
 
     ' GENERAL METHOD
@@ -193,29 +181,30 @@ Public MustInherit Class SocketBase
             Dim msgBytes As Byte() = MessageFraming.SendCipher(packet)
 
             ' Send the MessagePackage in bytes form
-            _SendBytes(sock, msgBytes)
+            _SendBytes(msgBytes)
         Else
             ' TODO: throw ERROR that the encrypted tunnel has not been built!!!
+            MessageBox.Show("Want to encrypt a message while there is no key to encrypt it.")
         End If
     End Sub
 
     Private Sub SendPlaintextMessage(sock As Socket, plaintext As String)
         Dim msgBytes As Byte() = MessageFraming.SendPlaintext(plaintext)
-        _SendBytes(sock, msgBytes)
+        _SendBytes(msgBytes)
     End Sub
 
     ' send session key or encrypted message without attaching anything
     ' Basic function for all "send"s
     ' GENERAL METHOD
-    Private Sub _SendBytes(sock As Socket, msgAttached As Byte())
+    Private Sub _SendBytes(msgAttached As Byte()) Handles _keyExchange.Send
         'If Not handler Is Nothing And handler.Connected Then
-        If Not sock Is Nothing Then
-            If sock.Connected Then
+        If Not _handler Is Nothing Then
+            If _handler.Connected Then
                 Dim thread As New Thread(
                     Sub()
                         _connectDone.WaitOne()
                         ' Send the data through the socket.
-                        Dim bytesSent As Integer = sock.Send(msgAttached)
+                        Dim bytesSent As Integer = _handler.Send(msgAttached)
                         thread.Abort()
                     End Sub)
                 thread.Start()
@@ -409,17 +398,7 @@ Public MustInherit Class SocketBase
     End Sub
 
     Private Sub ReceivedEncryptedSessionKey(encryptedSessionKey As Byte()) Handles _messageFramer.ReceivedEncryptedSessionKey
-        If Not _encryptDone.WaitOne(0) Then ' if it is a encryted key to be exchanged; the message is now encrypted by RSA
-
-            _byteQueue.Enqueue(encryptedSessionKey)  ' stores encrypted session key and IV
-
-            ' When the queue received encrypted session key and IV
-            If _byteQueue.Count >= 2 Then
-                ReceiveTunnalRequest(_byteQueue.Dequeue(), _byteQueue.Dequeue())
-            End If
-        Else
-            ' TODO: ERROR
-        End If
+        _keyExchange.Receive(encryptedSessionKey)
     End Sub
 #End Region
 
@@ -446,6 +425,21 @@ Public MustInherit Class SocketBase
 
     Public Overridable Sub Shutdown()
         Shutdown(_handler)
+    End Sub
+
+    ' Notice: after key pair (`_RSA`) is set
+    Public Sub InitKeyExchange(seed As Integer)
+        _keyExchange = New Handshake(seed, _RSA)
+    End Sub
+
+    Public Sub LaunchKeyExchange()
+        _keyExchange.Start()
+    End Sub
+
+    Private Sub DoneKeyExchange(aes As AesApi) Handles _keyExchange.DoneHandshake
+        _AES = aes
+        _encryptDone.Set()
+        RaiseEvent Encrypted()
     End Sub
 
     Private Sub Shutdown(handler As Socket)
@@ -487,44 +481,6 @@ Public MustInherit Class SocketBase
         End If
     End Sub
 
-    Private Shared Function IncrementBytes(ByVal bVal As Byte(), ByVal increment As Integer) As Byte()
-        'Dim carry As Integer = 0
-        Dim i As Integer
-        For i = 0 To bVal.Length - 1
-            'bVal(i) = (bVal(i) + carry + increment) Mod Byte.MaxValue
-            bVal(i) = (bVal(i) + increment) Mod Byte.MaxValue
-            'If bVal(i) + increment + carry <= Byte.MaxValue Then
-            If bVal(i) + increment <= Byte.MaxValue Then
-                Exit For
-                'Else
-                '    carry = 1
-            End If
-            increment = increment / Byte.MaxValue
-        Next i
-        Return bVal
-    End Function
-
-    Private Shared Function DecrementBytes(ByVal bVal As Byte(), ByVal decrement As Integer) As Byte()
-        'Dim borrow As Integer = 0
-        Dim i As Integer
-        For i = 0 To bVal.Length - 1
-            'Dim tmp As Integer = (bVal(i) - decrement - borrow)
-            Dim tmp As Integer = (bVal(i) - decrement)
-            While tmp < Byte.MinValue
-                tmp = tmp + Byte.MaxValue
-            End While
-            bVal(i) = tmp
-            'If bVal(i) - decrement - borrow >= Byte.MinValue Then
-            If bVal(i) - decrement >= Byte.MinValue Then
-                Exit For
-                'Else
-                '    borrow = 1
-            End If
-            decrement = decrement / Byte.MaxValue
-        Next i
-        Return bVal
-    End Function
-
     Private Shared Function UIntIncrement(uInt As UInteger)
         If uInt = UInteger.MaxValue Then
             Return UInteger.MinValue
@@ -533,79 +489,6 @@ Public MustInherit Class SocketBase
         End If
     End Function
 
-#End Region
-
-#Region "three-way-handshake"
-    ' Actively build a tunnel
-    Public Sub MakeEncryptTunnel(seed As Integer)
-        If _IsOppositeStandby Then
-            ' start the first handshake
-            _AES = New AesApi(seed)
-            SendTunnalRequest()
-        Else
-            SendStandbyMsg()
-        End If
-    End Sub
-
-    ' received encrypted session key
-    ' to decrypt the session key and check it and even save it if necessary
-    Private Sub ReceiveTunnalRequest(encryptedKey As Byte(), encryptedIV As Byte())
-        _handshakeTimes += 1
-
-        Dim decryptedKey As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedKey), _handshakeTimes)
-        Dim decryptedIV As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedIV), _handshakeTimes)
-
-
-        If _sendSessionKeyDone.WaitOne(0) Then
-            If decryptedKey.SequenceEqual(_AES.GetSessionKey()) And decryptedIV.SequenceEqual(_AES.GetIV()) Then
-                ' do nothing
-            Else
-                _handshakeTimes -= 1
-                MessageBox.Show("Session key not matched!")
-                Shutdown()
-                Exit Sub
-            End If
-        Else
-            _AES = New AesApi(0)
-            _AES.SetSessionKey(decryptedKey)
-            _AES.SetIV(decryptedIV)
-
-            ' send later
-        End If
-
-        If _handshakeTimes >= 3 Then
-            HandShakeDone()
-        Else
-            SendTunnalRequest()
-        End If
-    End Sub
-
-    Public Sub SendTunnalRequest()
-        If _RSA.HasPubKey Then
-            _handshakeTimes += 1
-
-            _sendSessionKeyDone.Set()  ' the first hand shake is still considered
-
-            ' encrypt session key
-            Dim encryptedKey As Byte() = _RSA.EncryptMsg(IncrementBytes(_AES.GetSessionKey(), _handshakeTimes))
-            ' send encrypted session key
-            SendSessionKey(encryptedKey)
-
-            Dim encryptedIV As Byte() = _RSA.EncryptMsg(IncrementBytes(_AES.GetIV(), _handshakeTimes))
-            SendSessionKey(encryptedIV)
-
-        End If
-
-        If _handshakeTimes >= 3 Then
-            HandShakeDone()
-            ' else wait for the opposite sending here a hand shake
-        End If
-    End Sub
-
-    Private Sub HandShakeDone()
-        _encryptDone.Set()
-        RaiseEvent Encrypted()
-    End Sub
 #End Region
 
 #Region "Feedback"

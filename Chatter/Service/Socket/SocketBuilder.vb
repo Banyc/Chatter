@@ -4,6 +4,7 @@
     Public Event BuildDone(socket As SocketBase)
 
     Public Sub AsyncBuild(config As SocketSettingsFramework)
+        ' Initiation
         If _socket IsNot Nothing AndAlso _socket.IsShutdown Then
             _socket = Nothing
         End If
@@ -14,9 +15,14 @@
                     _socket = New SocketClient(config.IP, config.Port)
                 Case SocketCS.Server
                     _socket = New SocketListener(config.IP, config.Port, config.ExpectedIP)
+                Case Else
+                    _socket = Nothing
             End Select
             If _socket IsNot Nothing Then
                 InitCryptoFacility()
+                _socket.InitKeyExchange(_config.Seed)
+
+                ' Start building socket
                 _socket.BuildConnection()
             End If
         End If
@@ -42,7 +48,7 @@
     End Sub
 
     Private Sub GotStandbyMsg() Handles _socket.OpppsiteStandby
-        _socket.MakeEncryptTunnel(_config.Seed.GetHashCode())
+        _socket.LaunchKeyExchange()
     End Sub
 
     Private Sub Done() Handles _socket.Encrypted
