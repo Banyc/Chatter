@@ -72,16 +72,11 @@ Public MustInherit Class SocketBase
         Public Const Standby As String = "STANDBY"  '
     End Structure
 
-    Private _RSA As RsaApi
     Private _AES As AesApi
     Private WithEvents _messageFramer As MessageFraming
 #End Region
 
 #Region "Contructor"
-    'Protected Sub New(config As SocketSettingsFramework)
-    '    Me.New(config.IP, config.Port, config.Role)
-    '    _config = config
-    'End Sub
     Protected Sub New(ipStr As String, port As Integer, socketCS As SocketCS)
         Me.New(IPAddress.Parse(ipStr), port, socketCS)
     End Sub
@@ -91,7 +86,6 @@ Public MustInherit Class SocketBase
         Me.EndPointType = socketCS
         _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
         _textReceivedQueue = New Queue(Of String)
-        _RSA = New RsaApi()
 
         Dim rnd As New Random()
         _myMsgId = CUInt(rnd.Next())
@@ -402,6 +396,24 @@ Public MustInherit Class SocketBase
     End Sub
 #End Region
 
+#Region "Key Exchange"
+    ' Notice: after key pair (`_RSA`) is set
+    Public Sub InitKeyExchange(seed As Integer, rsa As RsaApi)
+        _keyExchange = New Handshake(seed, rsa)
+    End Sub
+
+    Public Sub LaunchKeyExchange()
+        _keyExchange.Start()
+    End Sub
+
+    Private Sub DoneKeyExchange(aes As AesApi) Handles _keyExchange.DoneHandshake
+        _AES = aes
+        _encryptDone.Set()
+        _keyExchange = Nothing
+        RaiseEvent Encrypted()
+    End Sub
+#End Region
+
 #Region "shared details"
     ' https://stackoverflow.com/questions/722240/instantly-detect-client-disconnection-from-server-socket
     ' detects if the connection is terminated
@@ -425,21 +437,6 @@ Public MustInherit Class SocketBase
 
     Public Overridable Sub Shutdown()
         Shutdown(_handler)
-    End Sub
-
-    ' Notice: after key pair (`_RSA`) is set
-    Public Sub InitKeyExchange(seed As Integer)
-        _keyExchange = New Handshake(seed, _RSA)
-    End Sub
-
-    Public Sub LaunchKeyExchange()
-        _keyExchange.Start()
-    End Sub
-
-    Private Sub DoneKeyExchange(aes As AesApi) Handles _keyExchange.DoneHandshake
-        _AES = aes
-        _encryptDone.Set()
-        RaiseEvent Encrypted()
     End Sub
 
     Private Sub Shutdown(handler As Socket)
@@ -526,22 +523,6 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Sets&Gets"
-    Public Function GetPrivateKey() As String
-        Return _RSA.GetPrivateKey()
-    End Function
-
-    Public Function GetPublicKey() As String
-        Return _RSA.GetMyPublicKey()
-    End Function
-
-    Public Sub SetPrivateKey(privateKey As String)
-        _RSA.SetPrivateKey(privateKey)
-    End Sub
-
-    Public Sub SetPublicKey(publicKey As String)
-        _RSA.SetOthersPublicKey(publicKey)
-    End Sub
-
     Protected Function GetIp() As IPAddress
         Return _ip
     End Function

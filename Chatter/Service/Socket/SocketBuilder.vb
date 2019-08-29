@@ -19,8 +19,8 @@
                     _socket = Nothing
             End Select
             If _socket IsNot Nothing Then
-                InitCryptoFacility()
-                _socket.InitKeyExchange(_config.Seed)
+                Dim rsa As RsaApi = InitCryptoFacility()
+                _socket.InitKeyExchange(_config.Seed, rsa)
 
                 ' Start building socket
                 _socket.BuildConnection()
@@ -34,10 +34,12 @@
         End If
     End Sub
 
-    Private Sub InitCryptoFacility()
-        _socket.SetPrivateKey(IO.File.ReadAllText(_config.PrivateKeyPath))
-        _socket.SetPublicKey(IO.File.ReadAllText(_config.PublicKeyPath))
-    End Sub
+    Private Function InitCryptoFacility() As RsaApi
+        Dim rsa As New RsaApi()
+        rsa.SetPrivateKey(IO.File.ReadAllText(_config.PrivateKeyPath))
+        rsa.SetOthersPublicKey(IO.File.ReadAllText(_config.PublicKeyPath))
+        Return rsa
+    End Function
 
     Private Sub ConnectedDone() Handles _socket.Connected
         Select Case _socket.EndPointType
