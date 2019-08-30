@@ -40,7 +40,7 @@ Public Class AddEndpoint
     End Sub
 
     Private Sub btnRoloadChatBox_Click(sender As Object, e As RoutedEventArgs)
-        If _socket IsNot Nothing Then
+        If _socket IsNot Nothing AndAlso Not _socket.IsShutdown Then
             Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                                   Sub()
                                       Dim chatBox As New ChatBox(_socket)
