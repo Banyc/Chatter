@@ -22,7 +22,7 @@ Public MustInherit Class SocketBase
     Public Event ReceivedImage(imageBytes As Byte())
 #End Region
 
-#Region "Variables Decl"
+#Region "Variables Declaration"
     Public ReadOnly Property EndPointType As SocketCS
 
     Private _ip As IPAddress
@@ -40,7 +40,7 @@ Public MustInherit Class SocketBase
         End Set
     End Property
 
-    Private _handler As Socket = Nothing
+    Private _socket As Socket = Nothing
 
     ' Services
     Private WithEvents _keyExchange As Handshake
@@ -57,15 +57,12 @@ Public MustInherit Class SocketBase
     Private _checkConnectThread As Thread
     Private _encryptionStepThread As Thread
 
-    Private _textReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
-    'Private _msgOnScreen As List(Of String)
-
     Private Structure MessageType
         Public Const ENDOFSTREAM As String = "EOF"  ' identification of a plain text
         Public Const ID As String = "ID"
         Public Const Text As String = "TEXT"
         Public Const FeedBack As String = "FB"
-        Public Const Standby As String = "STANDBY"  '
+        Public Const Standby As String = "STANDBY"  ' signal that is ready for session key exchange
     End Structure
 
     Private _AES As AesApi
@@ -80,7 +77,6 @@ Public MustInherit Class SocketBase
         _ip = ip
         _port = port
         Me.EndPointType = socketCS
-        _textReceivedQueue = New Queue(Of String)
 
         _feedback = New Feedback()
 
@@ -127,7 +123,7 @@ Public MustInherit Class SocketBase
         ' Serialize Object into string
         Dim unencryptedJson As String = AesContentFraming.GetJsonString(aesPack)
 
-        _SendCipherPackage(_handler, unencryptedJson)
+        _SendCipherPackage(_socket, unencryptedJson)
     End Sub
 
     Public Sub SendStandbyMsg()
@@ -174,13 +170,13 @@ Public MustInherit Class SocketBase
     ' GENERAL METHOD
     Private Sub _SendBytes(msgAttached As Byte()) Handles _keyExchange.Send
         'If Not handler Is Nothing And handler.Connected Then
-        If Not _handler Is Nothing Then
-            If _handler.Connected Then
+        If Not _socket Is Nothing Then
+            If _socket.Connected Then
                 Dim thread As New Thread(
                     Sub()
                         _connectDone.WaitOne()
                         ' Send the data through the socket.
-                        Dim bytesSent As Integer = _handler.Send(msgAttached)
+                        Dim bytesSent As Integer = _socket.Send(msgAttached)
                         thread.Abort()
                     End Sub)
                 thread.Start()
@@ -195,14 +191,8 @@ Public MustInherit Class SocketBase
         _listenThread = New Thread(
         Sub()
             While True
-                _connectDone.WaitOne()  ' the handler has done the connection
-                ''If IsConnect(_handler) Then
-                Receive(_handler)
-                'Else
-                'RaiseEvent Disconnected()
-                'Shutdown()
-                'Exit While
-                'End If
+                _connectDone.WaitOne()  ' the socket has done the connection
+                Receive(_socket)
             End While
         End Sub)
         _listenThread.Start()
@@ -214,9 +204,9 @@ Public MustInherit Class SocketBase
         Sub()
             While True
                 _connectDone.WaitOne()  ' the handler has done the connection
-                If Not IsConnect(_handler) Then
+                If Not IsConnect(_socket) Then
                     Thread.Sleep(1000)
-                    If Not IsConnect(_handler) Then  ' double check
+                    If Not IsConnect(_socket) Then  ' double check
                         RaiseEvent Disconnected()
                         'Shutdown()
                         Exit While
@@ -316,10 +306,7 @@ Public MustInherit Class SocketBase
                     ' send feedback to the sender
                     SendFeedback(textPack.MessageID)
 
-                    ' text that is waiting for being read
-                    _textReceivedQueue.Enqueue(textPack.Text)
-
-                    ' further handle the file
+                    ' further handle the text
                     RaiseEvent ReceivedText(textPack.Text)
 
                 Case AesContentKind.Feedback
@@ -358,7 +345,6 @@ Public MustInherit Class SocketBase
     Private Sub ReceivedPlaintext(text As String) Handles _messageFramer.ReceivedPlaintext
         ' explicitly pop out a window for it is tranmitted without encrypted
         Dim messageBoxThread As New Thread(Sub()
-                                               'MessageBox.Show(_textReceivedQueue.Dequeue(), "[RECEIVED] PLAIN TEXT NOT SAFE")
                                                MessageBox.Show(text, "[RECEIVED] PLAIN TEXT NOT SAFE")
                                                messageBoxThread.Abort()
                                            End Sub)
@@ -404,7 +390,7 @@ Public MustInherit Class SocketBase
 
         Dim json As String = AesContentFraming.GetJsonString(contentPack)
 
-        _SendCipherPackage(_handler, json)
+        _SendCipherPackage(_socket, json)
     End Sub
 
     Private Sub ReceiveFeedback(msgID As Integer)
@@ -412,7 +398,7 @@ Public MustInherit Class SocketBase
     End Sub
 #End Region
 
-#Region "shared details"
+#Region "other methods"
     ' https://stackoverflow.com/questions/722240/instantly-detect-client-disconnection-from-server-socket
     ' detects if the connection is terminated
     Private Shared Function IsConnect(handler As Socket) As Boolean
@@ -434,7 +420,7 @@ Public MustInherit Class SocketBase
     End Sub
 
     Public Overridable Sub Shutdown()
-        Shutdown(_handler)
+        Shutdown(_socket)
     End Sub
 
     Private Sub Shutdown(handler As Socket)
@@ -486,24 +472,16 @@ Public MustInherit Class SocketBase
         Return _port
     End Function
 
-    Protected Function GetHandler() As Socket
-        Return _handler
+    Protected Function GetSocket() As Socket
+        Return _socket
     End Function
 
-    Protected Sub SetHandler(handler As Socket)
-        _handler = handler
+    Protected Sub SetSocket(handler As Socket)
+        _socket = handler
     End Sub
 
     Public Function GetRemoteEndPoint() As String
-        Return _handler.RemoteEndPoint.ToString()
-    End Function
-
-    Public Function GetEarlyMsg()
-        If _textReceivedQueue.Count > 0 Then
-            Return _textReceivedQueue.Dequeue()
-        Else
-            Return Nothing
-        End If
+        Return _socket.RemoteEndPoint.ToString()
     End Function
 
     Public Function IsOppositeStandby() As Boolean

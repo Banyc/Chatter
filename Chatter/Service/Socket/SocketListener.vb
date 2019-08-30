@@ -39,7 +39,7 @@ Public Class SocketListener
                     server = Build(GetIp(), GetPort())
                 End While
 
-                SetHandler(server)
+                SetSocket(server)
                 ConnectDone()  ' enable the listenLoop
 
                 _buildThread.Abort()

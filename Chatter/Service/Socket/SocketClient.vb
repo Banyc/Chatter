@@ -18,7 +18,7 @@ Public Class SocketClient
             Sub()
                 ' Connect to a remote device. 
                 Dim client As Socket = Connect(GetIp(), GetPort())
-                SetHandler(client)
+                SetSocket(client)
                 ConnectDone()  ' enable the listenLoop
                 _connectThread.Abort()
             End Sub)
