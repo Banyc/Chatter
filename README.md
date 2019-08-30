@@ -409,3 +409,4 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] ~~Refactor `SocketBase` to accepting middle-wares~~
 - [x] Make the Three-way handshake service independence from `SocketBase`
 - [ ] Make encryption to be a middleware
+- [x] Make feedback service to be independent

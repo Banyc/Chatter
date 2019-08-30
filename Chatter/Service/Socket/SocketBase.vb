@@ -42,7 +42,9 @@ Public MustInherit Class SocketBase
 
     Private _handler As Socket = Nothing
 
+    ' Services
     Private WithEvents _keyExchange As Handshake
+    Private _feedback As Feedback
 
     ' ManualResetEvent instances signal completion.
     Private _connectDone As New ManualResetEvent(False)
@@ -55,13 +57,7 @@ Public MustInherit Class SocketBase
     Private _checkConnectThread As Thread
     Private _encryptionStepThread As Thread
 
-    ' checks the integrity and authenticity of the incoming message
-    ' against replay attack
-    Private _myMsgId As UInteger
-    Private _othersMsgId As UInteger
-
     Private _textReceivedQueue As Queue(Of String)  ' temp storage storing readable messages
-    Private _msgNotComfirmedList As Dictionary(Of Integer, AesLocalPackage)  ' stores sended messages  ' msgID : msgPackage
     'Private _msgOnScreen As List(Of String)
 
     Private Structure MessageType
@@ -84,12 +80,9 @@ Public MustInherit Class SocketBase
         _ip = ip
         _port = port
         Me.EndPointType = socketCS
-        _msgNotComfirmedList = New Dictionary(Of Integer, AesLocalPackage)
         _textReceivedQueue = New Queue(Of String)
 
-        Dim rnd As New Random()
-        _myMsgId = CUInt(rnd.Next())
-        _othersMsgId = Nothing
+        _feedback = New Feedback()
 
         _IsOppositeStandby = False
 
@@ -127,26 +120,14 @@ Public MustInherit Class SocketBase
 
     ' GENERAL METHOD
     ' NOTE: DOES NOT NEED TO UPDATE `.MessageID` of `aesPack`
-    Public Sub SendCipher(aesPack As AesContentPackage, localPack As AesLocalPackage)
+    Private Sub SendCipher(aesPack As AesContentPackage, localPack As AesLocalPackage)
         ' NOTICE: This method must be called first
-        _StoreTempPackForFeedback(localPack)
+        _feedback.SetMsgID_StoreMyMsg(localPack)
 
         ' Serialize Object into string
         Dim unencryptedJson As String = AesContentFraming.GetJsonString(aesPack)
 
         _SendCipherPackage(_handler, unencryptedJson)
-    End Sub
-
-    ' NOTICE: This method must be called before `SendCipher`
-    Private Sub _StoreTempPackForFeedback(localPack As AesLocalPackage)
-        ' updates msg ID
-        _myMsgId = UIntIncrement(_myMsgId)
-
-        ' update msg ID
-        localPack.AesContentPack.MessageID = _myMsgId
-
-        ' save the outing message for later examine if the opposite indeed received it
-        _msgNotComfirmedList.Add(localPack.AesContentPack.MessageID, localPack)
     End Sub
 
     Public Sub SendStandbyMsg()
@@ -156,6 +137,7 @@ Public MustInherit Class SocketBase
 
     ' GENERAL METHOD
     ' send AesTextPackage in JSON form
+    ' involving an encryption of AES process
     Private Sub _SendCipherPackage(sock As Socket, unencryptedJson As String)
 
         If _encryptDone.WaitOne(0) Then  ' send cipher text
@@ -320,7 +302,7 @@ Public MustInherit Class SocketBase
 
             ' checks the integrity and authenticity of the incoming message
             If contentPack.Kind <> AesContentKind.Feedback Then
-                If Not DoesMessageIntegrated(contentPack) Then
+                If Not _feedback.ReceiveNewMsg_CheckIntegrity(contentPack) Then
                     Exit Sub
                 End If
             End If
@@ -397,7 +379,7 @@ Public MustInherit Class SocketBase
 #End Region
 
 #Region "Key Exchange"
-    ' Notice: after key pair (`_RSA`) is set
+    ' Notice: Call this after key pair (`rsa`) is set
     Public Sub InitKeyExchange(seed As Integer, rsa As RsaApi)
         _keyExchange = New Handshake(seed, rsa)
     End Sub
@@ -411,6 +393,22 @@ Public MustInherit Class SocketBase
         _encryptDone.Set()
         _keyExchange = Nothing
         RaiseEvent Encrypted()
+    End Sub
+#End Region
+
+#Region "Feedback"
+    Private Sub SendFeedback(msgID As Integer)
+
+        Dim contentPack = New AesFeedbackPackage()
+        contentPack.MessageID = msgID
+
+        Dim json As String = AesContentFraming.GetJsonString(contentPack)
+
+        _SendCipherPackage(_handler, json)
+    End Sub
+
+    Private Sub ReceiveFeedback(msgID As Integer)
+        RaiseEvent ReceivedFeedBack(_feedback.ReceiveFeedback_PopMyMsg(msgID))
     End Sub
 #End Region
 
@@ -477,49 +475,6 @@ Public MustInherit Class SocketBase
 #End If
         End If
     End Sub
-
-    Private Shared Function UIntIncrement(uInt As UInteger)
-        If uInt = UInteger.MaxValue Then
-            Return UInteger.MinValue
-        Else
-            Return uInt + 1
-        End If
-    End Function
-
-#End Region
-
-#Region "Feedback"
-    Private Sub ReceiveFeedback(msgID As Integer)
-        RaiseEvent ReceivedFeedBack(_msgNotComfirmedList(msgID))
-        _msgNotComfirmedList.Remove(msgID)
-    End Sub
-
-    ' TODO
-    Private Sub SendFeedback(msgID As Integer)
-
-        Dim contentPack = New AesFeedbackPackage()
-        contentPack.MessageID = msgID
-
-        Dim json As String = AesContentFraming.GetJsonString(contentPack)
-
-        _SendCipherPackage(_handler, json)
-    End Sub
-
-    ' checks the integrity and authenticity of the incoming message
-    Private Function DoesMessageIntegrated(aesPack As AesContentPackage) As Boolean
-        If _othersMsgId = Nothing Then  ' update other's message id
-            _othersMsgId = aesPack.MessageID
-        Else
-            Dim incrementedId As UInteger
-            incrementedId = UIntIncrement(_othersMsgId)
-            If incrementedId <> aesPack.MessageID Then  ' SYNs (previous msgID + 1 and the incoming msgID) do NOT match
-                MessageBox.Show("previous msgID + 1 and the incoming msgID do NOT match!", "WARNING")
-                Return False
-            End If
-            _othersMsgId = incrementedId
-        End If
-        Return True
-    End Function
 #End Region
 
 #Region "Sets&Gets"

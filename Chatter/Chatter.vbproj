@@ -90,6 +90,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Service\Crypto\AesApi.vb" />
+    <Compile Include="Service\MiddleWare\Feedback.vb" />
     <Compile Include="Service\MiddleWare\IMiddleware.vb" />
     <Compile Include="Service\Protocol\AesContentFraming.vb" />
     <Compile Include="Service\MiddleWare\Handshake.vb" />
