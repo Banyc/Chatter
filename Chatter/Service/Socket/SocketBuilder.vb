@@ -20,7 +20,7 @@
             End Select
             If _socket IsNot Nothing Then
                 Dim rsa As RsaApi = InitCryptoFacility()
-                _socket.InitKeyExchange(_config.Seed, rsa)
+                _socket.InitKeyExchange(_config.Seed.GetHashCode(), rsa)
 
                 ' Start building socket
                 _socket.BuildConnection()
@@ -44,6 +44,7 @@
     Private Sub ConnectedDone() Handles _socket.Connected
         Select Case _socket.EndPointType
             Case SocketCS.Client
+                ' server actively launch signal to start session key exchange process
             Case SocketCS.Server
                 _socket.SendStandbyMsg()
         End Select
@@ -56,5 +57,4 @@
     Private Sub Done() Handles _socket.Encrypted
         RaiseEvent BuildDone(_socket)
     End Sub
-
 End Class
