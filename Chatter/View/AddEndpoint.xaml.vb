@@ -3,7 +3,7 @@
 Public Class AddEndpoint
 
     Private WithEvents _builder As New SocketBuilder()
-    Private WithEvents _socket As SocketBase
+    Private WithEvents _socketMng As SocketBase
 
     Public Sub New()
 
@@ -26,24 +26,24 @@ Public Class AddEndpoint
         _builder.AsyncBuild(config)
     End Sub
 
-    Private Sub ReadyToChat(socket As SocketBase) Handles _builder.BuildDone
-        If _socket Is Nothing OrElse _socket.IsShutdown Then
-            _socket = socket
+    Private Sub ReadyToChat(socketMng As SocketBase) Handles _builder.BuildDone
+        If _socketMng Is Nothing OrElse _socketMng.IsShutdown Then
+            _socketMng = socketMng
             Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                                   Sub()
-                                      Dim chatBox As New ChatBox(socket)
+                                      Dim chatBox As New ChatBox(socketMng)
                                       chatBox.Show()
                                   End Sub)
         Else
-            socket.Shutdown()
+            socketMng.Shutdown()
         End If
     End Sub
 
     Private Sub btnRoloadChatBox_Click(sender As Object, e As RoutedEventArgs)
-        If _socket IsNot Nothing AndAlso Not _socket.IsShutdown Then
+        If _socketMng IsNot Nothing AndAlso Not _socketMng.IsShutdown Then
             Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                                   Sub()
-                                      Dim chatBox As New ChatBox(_socket)
+                                      Dim chatBox As New ChatBox(_socketMng)
                                       chatBox.Show()
                                   End Sub)
         End If
@@ -51,12 +51,12 @@ Public Class AddEndpoint
 
     Private Sub AddEndpoint_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         _builder.Abort()
-        If _socket IsNot Nothing Then
-            _socket.Shutdown()
+        If _socketMng IsNot Nothing Then
+            _socketMng.Shutdown()
         End If
     End Sub
 
-    Private Sub _socket_Connected() Handles _socket.Connected
+    Private Sub _socketMng_Connected() Handles _socketMng.Connected
         Me.Title = "Connected"
     End Sub
 End Class

@@ -1,36 +1,45 @@
 ﻿Public Class SocketBuilder
-    Private WithEvents _socket As SocketBase
+    Private WithEvents _socketMng As SocketBase
     Private _config As SocketSettingsFramework
     Public Event BuildDone(socket As SocketBase)
 
     Public Sub AsyncBuild(config As SocketSettingsFramework)
         ' Initiation
-        If _socket IsNot Nothing AndAlso _socket.IsShutdown Then
-            _socket = Nothing
+        If _socketMng IsNot Nothing AndAlso _socketMng.IsShutdown Then
+            _socketMng = Nothing
         End If
-        If _socket Is Nothing Then
+        If _socketMng Is Nothing Then
             _config = config
             Select Case config.Role
                 Case SocketCS.Client
-                    _socket = New SocketClient(config.IP, config.Port)
+                    _socketMng = New SocketClient(config.IP, config.Port)
                 Case SocketCS.Server
-                    _socket = New SocketListener(config.IP, config.Port, config.ExpectedIP)
+                    _socketMng = New SocketListener(config.IP, config.Port, config.ExpectedIP)
                 Case Else
-                    _socket = Nothing
+                    _socketMng = Nothing
             End Select
-            If _socket IsNot Nothing Then
-                Dim rsa As RsaApi = InitCryptoFacility()
-                _socket.InitKeyExchange(_config.Seed.GetHashCode(), rsa)
+            If _socketMng IsNot Nothing Then
+                Dim rsa As RsaApi
+
+                Try
+                    rsa = InitCryptoFacility()
+                Catch ex As IO.IOException
+                    _socketMng.Shutdown()
+                    MessageBox.Show(ex.Message.ToString(), "Error")
+                    Return
+                End Try
+
+                _socketMng.InitKeyExchange(_config.Seed.GetHashCode(), rsa)
 
                 ' Start building socket
-                _socket.BuildConnection()
+                _socketMng.BuildConnection()
             End If
         End If
     End Sub
 
     Public Sub Abort()
-        If _socket IsNot Nothing Then
-            _socket.Shutdown()
+        If _socketMng IsNot Nothing Then
+            _socketMng.Shutdown()
         End If
     End Sub
 
@@ -41,20 +50,20 @@
         Return rsa
     End Function
 
-    Private Sub ConnectedDone() Handles _socket.Connected
-        Select Case _socket.EndPointType
+    Private Sub ConnectedDone() Handles _socketMng.Connected
+        Select Case _socketMng.EndPointType
             Case SocketCS.Client
                 ' server actively launch signal to start session key exchange process
             Case SocketCS.Server
-                _socket.SendStandbyMsg()
+                _socketMng.SendStandbyMsg()
         End Select
     End Sub
 
-    Private Sub GotStandbyMsg() Handles _socket.OpppsiteStandby
-        _socket.LaunchKeyExchange()
+    Private Sub GotStandbyMsg() Handles _socketMng.OpppsiteStandby
+        _socketMng.LaunchKeyExchange()
     End Sub
 
-    Private Sub Done() Handles _socket.Encrypted
-        RaiseEvent BuildDone(_socket)
+    Private Sub Done() Handles _socketMng.Encrypted
+        RaiseEvent BuildDone(_socketMng)
     End Sub
 End Class

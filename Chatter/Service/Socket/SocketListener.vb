@@ -7,10 +7,6 @@ Imports System.Threading
 Public Class SocketListener
     Inherits SocketBase
 
-    Private _buildThread As Thread
-
-    Private _listener As Socket  ' for shutdown
-
     Private _expectedIp As IPAddress
 
     ' Incoming data from the client.  
@@ -27,24 +23,27 @@ Public Class SocketListener
     End Sub
 
     Public Overrides Sub BuildConnection()
-        _buildThread = New Thread(
+        Dim buildThread As Task = New Task(
             Sub()
-                ' Connect to a remote device. 
-                Dim server As Socket = Build(GetIp(), GetPort())
+                Try
+                    ' Connect to a remote device. 
+                    MyBase._socket = Build(GetIp(), GetPort())
+
+                Catch ex As SocketException
+                    MessageBox.Show(ex.Message.ToString(), SocketCS.Server.ToString())
+                    MyBase.Shutdown()
+                End Try
 
                 ' keep listenning until it established a legal connection
-                While Not IsConnectorLegal(server, _expectedIp)
-                    server.Dispose()
+                While Not IsConnectorLegal(MyBase._socket, _expectedIp)
+                    MyBase._socket.Dispose()
 
-                    server = Build(GetIp(), GetPort())
+                    MyBase._socket = Build(GetIp(), GetPort())
                 End While
 
-                SetSocket(server)
-                ConnectDone()  ' enable the listenLoop
-
-                _buildThread.Abort()
+                MyBase.ConnectDone()  ' enable the listenLoop
             End Sub)
-        _buildThread.Start()
+        buildThread.Start()
     End Sub
 
     Private Function IsConnectorLegal(server As Socket, expectedIp As IPAddress) As Boolean
@@ -70,53 +69,35 @@ Public Class SocketListener
 
     ' build and connect
     Private Function Build(ip As IPAddress, port As Integer) As Socket
-        Dim handler As Socket = Nothing
-        Try
-            ' Establish the local endpoint for the socket.  
-            ' Dns.GetHostName returns the name of the   
-            ' host running the application.  
-            'Dim ipHostInfo As IPHostEntry = Dns.GetHostEntry(Dns.GetHostName())
-            'Dim ipAddress As IPAddress = ipHostInfo.AddressList(0)
-            'Dim localEndPoint As New IPEndPoint(ipAddress, 11000)
-            Dim ipAddress As IPAddress = ip
-            Dim localEndPoint As New IPEndPoint(ipAddress, port)
+        Dim server As Socket = Nothing
+        ' Establish the local endpoint for the socket.  
+        ' Dns.GetHostName returns the name of the   
+        ' host running the application.  
+        'Dim ipHostInfo As IPHostEntry = Dns.GetHostEntry(Dns.GetHostName())
+        'Dim ipAddress As IPAddress = ipHostInfo.AddressList(0)
+        'Dim localEndPoint As New IPEndPoint(ipAddress, 11000)
+        Dim ipAddress As IPAddress = ip
+        Dim localEndPoint As New IPEndPoint(ipAddress, port)
 
-            ' Create a TCP/IP socket.  
-            _listener = New Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp)
+        ' Create a TCP/IP socket.  
+        server = New Socket(ipAddress.AddressFamily,
+            SocketType.Stream, ProtocolType.Tcp)
 
-            ' makes restarting a socket become possible
-            ' https://blog.csdn.net/limlimlim/article/details/23424855
-            _listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, True)
+        ' makes restarting a socket become possible
+        ' https://blog.csdn.net/limlimlim/article/details/23424855
+        server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, True)
 
-            ' Bind the socket to the local endpoint and   
-            ' listen for incoming connections.  
+        ' Bind the socket to the local endpoint and   
+        ' listen for incoming connections.  
 
-            _listener.Bind(localEndPoint)
-            _listener.Listen(10)
+        server.Bind(localEndPoint)
+        server.Listen(10)
 
-            ' Start listening for connections.  
-            Console.WriteLine("Waiting for a connection...")
-            ' Program is suspended while waiting for an incoming connection.  
-            handler = _listener.Accept()
-        Catch ex As Exception
-#If DEBUG Then
-            MessageBox.Show(ex.ToString(), SocketCS.Server.ToString())
-#End If
-            Shutdown()
-        End Try
-        Return handler
+        ' Start listening for connections.  
+        Console.WriteLine("Waiting for a connection...")
+
+        ' Program is suspended while waiting for an incoming connection.  
+        Return server.Accept()
     End Function
-
-    Public Overrides Sub Shutdown()
-        MyBase.Shutdown()
-        If Not _listener Is Nothing Then
-            _listener.Close()  ' to kill `_listener.Accept()`, freeing the thread
-            _listener.Dispose()
-        End If
-        If _buildThread.IsAlive Then
-            _buildThread.Abort()  ' if the thread is jammed, it cannot be aborted
-        End If
-    End Sub
 
 End Class 'SocketListener  

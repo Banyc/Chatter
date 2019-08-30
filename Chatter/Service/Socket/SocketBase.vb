@@ -40,7 +40,7 @@ Public MustInherit Class SocketBase
         End Set
     End Property
 
-    Private _socket As Socket = Nothing
+    Protected _socket As Socket = Nothing
 
     ' Services
     Private WithEvents _keyExchange As Handshake
@@ -51,11 +51,6 @@ Public MustInherit Class SocketBase
     Private _encryptDone As New ManualResetEvent(False)
     Private _receivedStandbyMsg As New ManualResetEvent(False)
     Private _sendSessionKeyDone As New ManualResetEvent(False)
-
-    ' Thread pointers
-    Private _listenThread As Thread
-    Private _checkConnectThread As Thread
-    Private _encryptionStepThread As Thread
 
     Private Structure MessageType
         Public Const ENDOFSTREAM As String = "EOF"  ' identification of a plain text
@@ -172,12 +167,11 @@ Public MustInherit Class SocketBase
         'If Not handler Is Nothing And handler.Connected Then
         If Not _socket Is Nothing Then
             If _socket.Connected Then
-                Dim thread As New Thread(
+                Dim thread As New Task(
                     Sub()
                         _connectDone.WaitOne()
                         ' Send the data through the socket.
                         Dim bytesSent As Integer = _socket.Send(msgAttached)
-                        thread.Abort()
                     End Sub)
                 thread.Start()
             End If
@@ -188,81 +182,78 @@ Public MustInherit Class SocketBase
 #Region "loop roots"
     ' listen if new message is received
     Private Sub ListenLoop()
-        _listenThread = New Thread(
+        Dim listenThread = New Task(
         Sub()
-            While True
-                _connectDone.WaitOne()  ' the socket has done the connection
-                Receive(_socket)
+            _connectDone.WaitOne()  ' the socket has done the connection
+            While Not _IsShutdown
+                Try
+                    Receive(_socket)
+                Catch ex As ObjectDisposedException
+                    ' when socket is shutdown (disposed) while the loop is still running
+                Catch ex As SeeminglyDosAttackException
+                    Shutdown()
+                Catch ex As SocketException
+                    ' when socket is closed while the receiving loop is still running
+#If Not DEBUG Then
+                Catch ex As Exception
+                    MessageBox.Show(ex.ToString(), Me.EndPointType.ToString())
+                    Shutdown()
+#End If
+                End Try
             End While
         End Sub)
-        _listenThread.Start()
+        listenThread.Start()
     End Sub
 
     ' check if the connection is off
     Private Sub CheckConnectLoop()
-        _checkConnectThread = New Thread(
+        Dim checkConnectThread = New Task(
         Sub()
-            While True
-                _connectDone.WaitOne()  ' the handler has done the connection
-                If Not IsConnect(_socket) Then
-                    Thread.Sleep(1000)
-                    If Not IsConnect(_socket) Then  ' double check
-                        RaiseEvent Disconnected()
-                        'Shutdown()
-                        Exit While
+            _connectDone.WaitOne()  ' the handler has done the connection
+            While Not _IsShutdown
+                Try
+                    If Not IsConnect(_socket) Then
+                        Thread.Sleep(1000)
+                        If Not IsConnect(_socket) Then  ' double check
+                            RaiseEvent Disconnected()
+                            'Shutdown()
+                            Exit While
+                        End If
                     End If
-                End If
+                Catch ex As ObjectDisposedException
+                    ' when socket is shutdown (disposed) while the loop is still running
+                End Try
                 Thread.Sleep(2000)
             End While
-            _checkConnectThread.Abort()
         End Sub)
-        _checkConnectThread.Start()
+        checkConnectThread.Start()
     End Sub
 #End Region
 
 #Region "on reception"
     Private Sub RaiseStandbyEventThread()
         ' updates UI
-        Dim eventThread As New Thread(
+        Dim eventThread As New Task(
         Sub()
             RaiseEvent OpppsiteStandby()
-            eventThread.Abort()
         End Sub)
         eventThread.Start()
     End Sub
 
     ' Should be run in thread
     Private Sub Receive(handler As Socket)
-        If Not handler Is Nothing Then
+        If handler IsNot Nothing Then
             ' Data buffer for incoming data.
             Dim bytes() As Byte = New [Byte](262144 - 1) {}  ' 256K
 
             ' An incoming connection needs to be processed.
-            Try
-                Dim bytesRec As Integer = handler.Receive(bytes)
+            Dim bytesRec As Integer = handler.Receive(bytes)
 
-                ' shorten the bytes array
-                bytes = bytes.Take(bytesRec).ToArray()
+            ' shorten the bytes array
+            bytes = bytes.Take(bytesRec).ToArray()
 
-                ' decode the incoming stream
-                _messageFramer.DecodeMsgFrame(bytes)
-
-                '#If Not DEBUG Then
-            Catch ex As SocketException
-                '#End If
-            Catch ex As SeeminglyDosAttackException
-                Shutdown()
-
-            Catch ex As ThreadAbortException
-                'MessageBox.Show(ex.ToString(), me.endpointtype.ToString())  ' TODO: comment out this
-                Shutdown()
-                'Exit While
-#If Not DEBUG Then
-            Catch ex As Exception
-                MessageBox.Show(ex.ToString(), me.endpointtype.ToString())
-                Shutdown()
-#End If
-            End Try
+            ' decode the incoming stream
+            _messageFramer.DecodeMsgFrame(bytes)
         End If
     End Sub
 
@@ -344,10 +335,9 @@ Public MustInherit Class SocketBase
     End Sub
     Private Sub ReceivedPlaintext(text As String) Handles _messageFramer.ReceivedPlaintext
         ' explicitly pop out a window for it is tranmitted without encrypted
-        Dim messageBoxThread As New Thread(Sub()
-                                               MessageBox.Show(text, "[RECEIVED] PLAIN TEXT NOT SAFE")
-                                               messageBoxThread.Abort()
-                                           End Sub)
+        Dim messageBoxThread As New Task(Sub()
+                                             MessageBox.Show(text, "[RECEIVED] PLAIN TEXT NOT SAFE")
+                                         End Sub)
         messageBoxThread.Start()
     End Sub
     Private Sub ReceivedPlaintextSignal(signal As MessagePlaintextSignal) Handles _messageFramer.ReceivedPlaintextSignal
@@ -411,50 +401,27 @@ Public MustInherit Class SocketBase
 
     Protected Sub ConnectDone()
         _connectDone.Set()
-        Dim thread As New Thread(
+        Dim thread As New Task(
         Sub()
             RaiseEvent Connected()
-            thread.Abort()
         End Sub)
         thread.Start()
     End Sub
 
     Public Overridable Sub Shutdown()
-        Shutdown(_socket)
-    End Sub
-
-    Private Sub Shutdown(handler As Socket)
         If Not IsShutdown Then
             IsShutdown = True
 
-            If Not handler Is Nothing Then
-                ' Release the socket.
-                handler.Shutdown(SocketShutdown.Both)  ' it cannot be shutdown while the thread is running
-                handler.Close()
-                handler.Dispose()
-            End If
-
-            If Not _listenThread Is Nothing Then
-                If _listenThread.IsAlive Then
-                    Try
-                        _listenThread.Abort()  ' the side effect is to cause error
-                    Catch ex As ThreadAbortException
-#If DEBUG Then
-                        MessageBox.Show(ex.ToString())
-#End If
-                    Catch ex As Exception
-                        MessageBox.Show(ex.ToString())
-
-                    End Try
+            Try
+                If Not _socket Is Nothing Then
+                    ' Release the socket.
+                    _socket.Shutdown(SocketShutdown.Both)  ' it cannot be shutdown while the thread is running
+                    _socket.Close()
+                    _socket.Dispose()
                 End If
-            End If
+            Catch ex As SocketException
 
-            If Not _checkConnectThread Is Nothing Then
-                If _checkConnectThread.IsAlive Then
-                    _checkConnectThread.Abort()  ' known side effect: dead thread cannot update state of a broken connection anymore.
-                    RaiseEvent Disconnected()  ' manually update its state
-                End If
-            End If
+            End Try
 
 #If DEBUG Then
             MessageBox.Show("Shutdowned", Me.EndPointType.ToString())
