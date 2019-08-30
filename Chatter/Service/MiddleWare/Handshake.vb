@@ -1,5 +1,16 @@
 ﻿' The handshake between endpoints is for Key exchange (exchange AES session key)
 
+
+' __Handshake Showcase__
+' - first stage - to compose a complete session key
+' A ==(A's partial session key)==> B
+' B ==(B's partial session key)==> A
+' - second stage - check if the opposite is an authentic user
+' A ==(complete session key + 1)==> B
+' B ==(complete session key + 2)==> A
+' A ==(complete session key + 3)==> B
+
+
 Public Class Handshake : Implements IMiddleware
     Public Event DoneHandshake(aes As AesApi)
     Public Event Send(message As Byte()) Implements IMiddleware.Send
@@ -7,7 +18,7 @@ Public Class Handshake : Implements IMiddleware
     Private _handshakeTimes As Integer
     Private _AES As AesApi
     Private _RSA As RsaApi
-    Private _DoesSendSessionKey As Boolean
+    Private _DidSendSessionKey As Boolean
     Private _IsPartialKeysMerged As Boolean
     Private _DidILaunchKeyExchange As Boolean
 
@@ -15,7 +26,7 @@ Public Class Handshake : Implements IMiddleware
         _handshakeTimes = 0
         _AES = New AesApi(seed)
         _RSA = rsa
-        _DoesSendSessionKey = False
+        _DidSendSessionKey = False
         _IsPartialKeysMerged = False
         _DidILaunchKeyExchange = False
     End Sub
@@ -64,12 +75,12 @@ Public Class Handshake : Implements IMiddleware
                 SendTunnalRequest()
             End If
 
-        Else ' check if the opposite is an authentic user
+        Else ' check if the opposite is an authentic user  ' the second stage begins
             _handshakeTimes += 1
 
             Dim decryptedKey As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedKey), _handshakeTimes)
 
-            If _DoesSendSessionKey Then
+            If _DidSendSessionKey Then  ' which means you have already have the session key
                 If decryptedKey.SequenceEqual(_AES.GetSessionKey()) Then
                     ' do nothing
                 Else
@@ -80,7 +91,7 @@ Public Class Handshake : Implements IMiddleware
                 End If
             Else
                 _AES.SetSessionKey(decryptedKey)
-
+                MessageBox.Show("Your seed for seesion key is not in effect", "Warning")
                 ' send later
             End If
 
@@ -93,11 +104,10 @@ Public Class Handshake : Implements IMiddleware
     End Sub
 
     ' check if the opposite is an authentic user
+    ' belongs to the second handshake stage
     Private Sub SendTunnalRequest()
         If _RSA.HasPubKey Then
             _handshakeTimes += 1
-
-            _DoesSendSessionKey = True  ' the first hand shake is still considered
 
             ' encrypt session key
             Dim encryptedKey As Byte() = _RSA.EncryptMsg(IncrementBytes(_AES.GetSessionKey(), _handshakeTimes))
@@ -115,6 +125,7 @@ Public Class Handshake : Implements IMiddleware
     End Sub
 
     Private Sub SendSessionKey(encryptedSessionKey As Byte())
+        _DidSendSessionKey = True
         Dim msgBytes As Byte() = MessageFraming.SendEncryptedSessionKey(encryptedSessionKey)
         RaiseEvent Send(msgBytes)
     End Sub
