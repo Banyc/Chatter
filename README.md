@@ -37,39 +37,48 @@ Chat with your friend freely on the Intranet!
 
 Class
 
-- "MainWindow.xaml.vb" - main entry of the program
-  - Task-bar flashing
-- "ChatBox.xaml.vb" - code behind UI for chat interface
-- "CryptoPanel.xaml.vb" - code behind UI for cryptography interface
-  - File drop
-- "AesApi.vb" - providing AES
-- "RsaApi.vb" - providing RSA
-- `MessageFraming` - serialize transmitting message
-- `AesContentFraming` - serialize  content inside the transmitting message
-- "SocketBase.vb" - handling all logic of socket operations
-- "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
-- "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
-- "SocketManager.vb" - a bridge between "SocketBase.vb" and other classes like `MainWindow` and `ChatBox`
-- "FlashWindow.vb" - shared class handling the flashing icon in task-bar
+- Service
+  - "Crypto"
+    - "AesApi.vb" - providing AES
+    - "RsaApi.vb" - providing RSA
+  - "Protocol"
+    - `MessageFraming` - serialize transmitting message
+    - `AesContentFraming` - serialize  content inside the transmitting message
+  - "Socket"
+    - "SocketBase.vb" - handling all logic of socket operations
+    - "SocketClient.vb" - handling client initiation - inherited from "SocketBase.vb"
+    - "SocketListener.vb" - handling server initiation - inherited from "SocketBase.vb"
+    - `SocketBuilder` - a creator for `SocketBase`
+    - `SocketSettingsFramework` - configuration template for `SocketBuilder`
+  - "MiddleWare"
+    - `Feedback` - handles feedback system
+    - `Handshake` - handles key exchange process
+  - "System"
+    - "FlashWindow.vb" - shared class handling the flashing icon in task-bar
+- View
+  - "MainWindow.xaml.vb" - main entry of the program
+    - Task-bar flashing
+  - `AddEndpoint` - temporary window for socket configuration
+  - "ChatBox.xaml.vb" - code behind UI for chat interface
 
 Xaml
 
 - "MainWindow.xaml" - main entry of the program
 - "ChatBox.xaml" - UI for chat interface
-- "CryptoPanel.xaml" - UI for cryptography interface
 
 ## Basic Principles
 
 ### Inclusive relationship of classes
 
 - `MainWindow`
-  - `CryptoPanel` - init
-    - `SocketBase`
   - `ChatBox` - init
   - `SocketClient` - init
     - `SocketBase` - init - base
-      - `AesApi` - init
-      - `RsaApi` - init
+      - `Feedback` - init
+      - `Handshake` - init
+        - `AesApi` - init
+        - `RsaApi` - init
+      - `AesApi` - from `Handshake`
       - `AesContentFraming` - shared
       - `MessageFraming` - init
   - `SocketListener` - init
@@ -77,10 +86,6 @@ Xaml
       - ...
   - `SocketBase`
   - `FlashWindow` - shared
-  - `SocketManager` - init
-    - `SocketBase`
-    - `ChatBox`
-    <!-- - `CryptoPanel` -->
 
 PS
 
@@ -118,15 +123,17 @@ In User-oriented order
 - Then the user can send "stand-by" signal to his peer.
   - Conducted in class `SocketBase`
   - the act will give the right for his peer to generate a session key
-- If the peer send in the "stand-by" signal, the user who received it should generate a session key.
-  - Conducted in class `SocketBase`
+- If the peer send in the "stand-by" signal, the user who received it should generate a partial session key.
+  - Conducted in class `Handshake`
   - session key generation is conducted in class `AesApi`
-    - class `AesApi` has been instantiated in `SocketBase` during the handshakes
+    - class `AesApi` has been instantiated in `Handshake` during the handshakes
   - the details are illustrated below.
-- Who generating the session key launches the three-way handshake
-  - Conducted in class `SocketBase`
-  - the handshakes are aimed to exam the authenticity of both his peer and himself and to send the session key to the one who has sended "stand-by" signal.
+- Both sides generate partial session keys and then merge them together as a completely unique session key.
+- Who the last receiving other's partial session key launches the three-way handshake
+  - Conducted in class `Handshake`
+  - the handshakes are aimed to exam the authenticity of both his peer and himself ~~and to send the session key to the one who has sended "stand-by" signal~~.
   - the details are illustrated below.
+- Then the object of `AesApi` class will be returned to `SocketBase` from `Handshake`
 - When the implementation done, the user and his peer can now chat in the chat box
   - the login panel will collapsed and the chat panel will be visible.
     - login panel includes the user control implemented in "CryptoPanel.xaml" and part of controls implemented in "MainWindow.xaml"
@@ -154,6 +161,8 @@ TODO...
 Basic steps are shown in pseudo-code below
 
 #### Three-way handshake
+
+which is the second stage of the key exchange process. It intends to check the authenticity of the opposite user
 
 ```VB
     Dim sKey As Byte()
@@ -325,13 +334,13 @@ TODO: explain different derived class under `AesLocalPackage`
 
 - Denote arbitrary integer as `[int]`, arbitrary text as `[text]`
 
-- plain text - `{"$type":"SocketTest.AesTextPackage, SocketTest","MessageID":[int],"Text":"[text]","Kind":0}`
+- plain text - `{"$type":"Chatter.AesTextPackage, Chatter","MessageID":[int],"Text":"[text]","Kind":0}`
 
 - cipher content - denoted as `[c]`, which is stored in byte array `As Byte()`, encrypted from `AesContentPackage`
 
 - IV - denoted as `[IV]`, which is stored in byte array `As Byte()`
 
-- send-out package - `{"$type":"SocketTest.CipherMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[IV][c]"},"Kind":1}`
+- send-out package - `{"$type":"Chatter.CipherMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[IV][c]"},"Kind":1}`
 
 #### Plain-text message
 
@@ -341,23 +350,23 @@ TODO: explain different derived class under `AesLocalPackage`
 
 - Denote arbitrary integer as `[int]`
 
-- plaintext - `{"$type":"SocketTest.AesFeedbackPackage, SocketTest","MessageID":[int],"Kind":2}`
+- plaintext - `{"$type":"Chatter.AesFeedbackPackage, Chatter","MessageID":[int],"Kind":2}`
 
 - remaining process goes to "cipher Content" part
 
 - encrypted content denotes as `[c]`
 
-- `{"$type":"SocketTest.CipherMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[c]"},"Kind":1}`
+- `{"$type":"Chatter.CipherMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[c]"},"Kind":1}`
 
 #### Standby message
 
-- `{"$type":"SocketTest.PlaintextSignalMessagePackage, SocketTest","Content":0,"Kind":0}`
+- `{"$type":"Chatter.PlaintextSignalMessagePackage, Chatter","Content":0,"Kind":0}`
 
 #### Handshake message
 
 - encrypted session key - stored in byte array `As Byte()` - denote as `[sK]`
 
-- `{"$type":"SocketTest.EncryptedSessionKeyMessagePackage, SocketTest","Content":{"$type":"System.Byte[], mscorlib","$value":"[sK]"},"Kind":3}`
+- `{"$type":"Chatter.EncryptedSessionKeyMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[sK]"},"Kind":3}`
 
 ### Feedback system
 
