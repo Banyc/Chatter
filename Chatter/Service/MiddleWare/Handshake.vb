@@ -37,7 +37,6 @@ Public Class Handshake : Implements IMiddleware
                 Exit Sub
             End If
         Else
-            _AES = New AesApi(0)
             _AES.SetSessionKey(decryptedKey)
 
             ' send later
