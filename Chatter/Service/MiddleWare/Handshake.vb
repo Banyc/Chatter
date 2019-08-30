@@ -61,6 +61,8 @@ Public Class Handshake : Implements IMiddleware
             ' send encrypted session key
             SendSessionKey(encryptedKey)
 
+        Else
+            Throw New Exception("Public key is missing when key exchange")
         End If
 
         If _handshakeTimes >= 3 Then
