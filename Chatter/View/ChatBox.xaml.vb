@@ -28,10 +28,14 @@ Public Class ChatBox
     End Sub
     Public Sub New(socket As SocketBase)
         _socket = socket
+
         ' message from the opposite
         AddHandler _socket.ReceivedText, AddressOf NewMessage
+        AddHandler _socket.ReceivedText, AddressOf FlashTaskbar
         AddHandler _socket.ReceivedFile, AddressOf HandleReceivedFile
+        AddHandler _socket.ReceivedFile, AddressOf FlashTaskbar
         AddHandler _socket.Disconnected, AddressOf UpdateDisconnectedState
+        AddHandler _socket.Disconnected, AddressOf FlashTaskbar
         ' My own message
         AddHandler _socket.ReceivedFeedBack, AddressOf HandleMySentMsg
 
@@ -39,7 +43,14 @@ Public Class ChatBox
         Me.Title = _socket.GetRemoteEndPoint()
     End Sub
 
-#Region "Response to socket"
+    Private Sub FlashTaskbar()
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+            Sub()
+                FlashWindow.Flash(New Windows.Interop.WindowInteropHelper(Me).Handle)
+            End Sub)
+    End Sub
+
+#Region "Response to socket state"
     Private Sub HandleMySentMsg(localContentPack As AesLocalPackage)
         Select Case localContentPack.AesContentPack.Kind
             Case AesContentKind.Text
@@ -291,7 +302,7 @@ Public Class ChatBox
     End Function
 #End Region
 
-#Region "Events"
+#Region "Events of Controls"
     Private Sub btnSend_Click(sender As Object, e As RoutedEventArgs)
         If _socket IsNot Nothing Then
             _socket.SendCipherText(txtInput.Text)

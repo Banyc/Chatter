@@ -14,6 +14,10 @@ Public Class AddEndpoint
 
     End Sub
     Private Sub btnBuildSocket_Click(sender As Object, e As RoutedEventArgs)
+        If _builder IsNot Nothing Then
+            _builder.Abort()
+        End If
+
         Dim config As New SocketSettingsFramework()
         config.IP = IP.Text
         config.Port = Port.Text
@@ -35,7 +39,8 @@ Public Class AddEndpoint
                                       chatBox.Show()
                                   End Sub)
         Else
-            socketMng.Shutdown()
+            _socketMng.Shutdown()
+            _socketMng = socketMng
         End If
     End Sub
 
