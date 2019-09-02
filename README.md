@@ -9,7 +9,6 @@ Chat with your friend freely on the Intranet!
 - don't expose your private key to anyone else
 - keys that outputted as files are not encrypted
 - all credential message are stored in the memory when the program is running
-- ~~if man in the middle both got your public key and spoofed the opposite IP, he can fake his identification as the opposite~~
 - It is your job to check if other's public key is authentic
 - make sure that the signal "encrypted" is shown before sending credential messages.
 - if others sniff the traffic, the message can be cracked theoretically by brute force though it might take a long time
@@ -23,14 +22,14 @@ Chat with your friend freely on the Intranet!
   - save the key pair
 - If you've saved key pair
   - load up your own private key
-    - you can also drop the file on the window
+    - ~~you can also drop the file on the window~~
 - Send public key to your friend in any channel if not 've done
 - Double check the authenticity of the incoming public key from your friend with him / her
 - Load up **other's** public key
-  - you can also drop the file on the window
+  - ~~you can also drop the file on the window~~
 - Randomly type some key to the text box at the bottom of the window. Better more.
+- Click the button that launches a connection
 - Wait until your friend has successfully connected to your app
-- Click "Standby" or "Send Session Key!"
 - Chat with your friend freely!
 
 ## File Structure
@@ -383,11 +382,7 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 
 ## Known BUG
 
-- The thread might fail to exit. Check your process manually to make sure the program has exited
-
 ## Known Limitation
-
-- ~~each transmission allows message only up to 1024 bit~~
 
 ## Acknowledgement
 
@@ -419,3 +414,5 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] Make the Three-way handshake service independence from `SocketBase`
 - [ ] Make encryption to be a middleware
 - [x] Make feedback service to be independent
+- [ ] Add model for chat content
+- [ ] decouple SocketBase with ChatBox. Between them adds a controller
