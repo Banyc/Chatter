@@ -3,6 +3,7 @@
 ' <https://www.codeproject.com/Articles/37496/TCP-IP-Protocol-Design-Message-Framing>
 
 Imports Newtonsoft.Json
+Imports Newtonsoft.Json.Linq
 
 Public Class SeeminglyDosAttackException : Inherits Exception
     Public Sub New()
@@ -123,7 +124,7 @@ Public Class MessageFraming
     Private Shared Function GetMsgFrame(msgPack As MessagePackage) As Byte()
         ' Set identifier for json - ref - <https://christianarg.wordpress.com/2012/11/06/serializing-and-deserializing-inherited-types-with-json-anything-you-want/>
         Dim jsonSettings = New JsonSerializerSettings()
-        jsonSettings.TypeNameHandling = TypeNameHandling.Objects
+        jsonSettings.TypeNameHandling = TypeNameHandling.None
 
         ' Serialize into JSON
         Dim jsonMsg As String = JsonConvert.SerializeObject(msgPack, jsonSettings)
@@ -241,26 +242,29 @@ Public Class MessageFraming
 
             ' Set identifier for json
             Dim jsonSettings = New JsonSerializerSettings()
-            jsonSettings.TypeNameHandling = TypeNameHandling.Objects
+            jsonSettings.TypeNameHandling = TypeNameHandling.None
 
-            Dim msgPack As MessagePackage = Newtonsoft.Json.JsonConvert.DeserializeObject(Of MessagePackage)(jsonStr, jsonSettings)
-            Select Case msgPack.Kind
+            ' make an object of json
+            Dim jo As JObject = JObject.Parse(jsonStr)
+
+            ' distribute
+            Select Case jo("Kind").Value(Of Int64)
                 Case MessageKind.Cipher
-                    Dim cipherPack As CipherMessagePackage = msgPack
+                    Dim cipherPack As CipherMessagePackage = JsonConvert.DeserializeObject(Of CipherMessagePackage)(jsonStr, jsonSettings)
                     RaiseEvent ReceivedCipher(cipherPack.Content)
                 Case MessageKind.Plaintext
-                    Dim plaintextPack As PlaintextMessagePackage = msgPack
+                    Dim plaintextPack As PlaintextMessagePackage = JsonConvert.DeserializeObject(Of PlaintextMessagePackage)(jsonStr, jsonSettings)
                     RaiseEvent ReceivedPlaintext(plaintextPack.Content)
                 Case MessageKind.PlaintextSignal
-                    Dim plaintextSignalPack As PlaintextSignalMessagePackage = msgPack
+                    Dim plaintextSignalPack As PlaintextSignalMessagePackage = JsonConvert.DeserializeObject(Of PlaintextSignalMessagePackage)(jsonStr, jsonSettings)
                     RaiseEvent ReceivedPlaintextSignal(plaintextSignalPack.Content)
                 Case MessageKind.EncryptedSessionKey
-                    Dim encryptedSessionKeyPack As EncryptedSessionKeyMessagePackage = msgPack
+                    Dim encryptedSessionKeyPack As EncryptedSessionKeyMessagePackage = JsonConvert.DeserializeObject(Of EncryptedSessionKeyMessagePackage)(jsonStr, jsonSettings)
                     RaiseEvent ReceivedEncryptedSessionKey(encryptedSessionKeyPack.Content)
+                Case Else
+                    Throw New Exception("Unknown message received")
             End Select
         End While
     End Sub
-
-
 #End Region
 End Class

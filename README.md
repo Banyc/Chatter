@@ -333,13 +333,13 @@ TODO: explain different derived class under `AesLocalPackage`
 
 - Denote arbitrary integer as `[int]`, arbitrary text as `[text]`
 
-- plain text - `{"$type":"Chatter.AesTextPackage, Chatter","MessageID":[int],"Text":"[text]","Kind":0}`
+- plain text - `{"MessageID":[int],"Text":"[text]","Kind":0}`
 
 - cipher content - denoted as `[c]`, which is stored in byte array `As Byte()`, encrypted from `AesContentPackage`
 
 - IV - denoted as `[IV]`, which is stored in byte array `As Byte()`
 
-- send-out package - `{"$type":"Chatter.CipherMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[IV][c]"},"Kind":1}`
+- send-out package - `{"Content":"[IV][c]","Kind":1}`
 
 #### Plain-text message
 
@@ -349,23 +349,23 @@ TODO: explain different derived class under `AesLocalPackage`
 
 - Denote arbitrary integer as `[int]`
 
-- plaintext - `{"$type":"Chatter.AesFeedbackPackage, Chatter","MessageID":[int],"Kind":2}`
+- plaintext - `{"MessageID":[int],"Kind":2}`
 
 - remaining process goes to "cipher Content" part
 
 - encrypted content denotes as `[c]`
 
-- `{"$type":"Chatter.CipherMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[c]"},"Kind":1}`
+- `{"Content":"[c]","Kind":1}`
 
 #### Standby message
 
-- `{"$type":"Chatter.PlaintextSignalMessagePackage, Chatter","Content":0,"Kind":0}`
+- `{"Content":0,"Kind":0}`
 
 #### Handshake message
 
 - encrypted session key - stored in byte array `As Byte()` - denote as `[sK]`
 
-- `{"$type":"Chatter.EncryptedSessionKeyMessagePackage, Chatter","Content":{"$type":"System.Byte[], mscorlib","$value":"[sK]"},"Kind":3}`
+- `{"Content":"[sK]","Kind":3}`
 
 ### Feedback system
 

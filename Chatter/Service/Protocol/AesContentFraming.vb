@@ -1,4 +1,5 @@
 ﻿Imports Newtonsoft.Json
+Imports Newtonsoft.Json.Linq
 
 Public Enum AesContentKind
     Text
@@ -74,7 +75,7 @@ Public Class AesContentFraming
     Public Shared Function GetJsonString(AesContentPackage As AesContentPackage) As String
         ' Set identifier for json
         Dim jsonSettings = New JsonSerializerSettings()
-        jsonSettings.TypeNameHandling = TypeNameHandling.Objects
+        jsonSettings.TypeNameHandling = TypeNameHandling.None
 
         Dim jsonStr As String = JsonConvert.SerializeObject(AesContentPackage, jsonSettings)
         Return jsonStr
@@ -88,12 +89,30 @@ Public Class AesContentFraming
         Return GetAesContentPackage(jsonStr)
     End Function
 
-    Public Shared Function GetAesContentPackage(json As String) As AesContentPackage
+    Public Shared Function GetAesContentPackage(jsonStr As String) As AesContentPackage
         ' Set identifier for json
         Dim jsonSettings = New JsonSerializerSettings()
-        jsonSettings.TypeNameHandling = TypeNameHandling.Objects
+        jsonSettings.TypeNameHandling = TypeNameHandling.None
 
-        Return JsonConvert.DeserializeObject(Of AesContentPackage)(json, jsonSettings)
+        ' make an object of json
+        Dim jo As JObject = JObject.Parse(jsonStr)
+
+        ' distribute
+        Dim aesContentPack As AesContentPackage
+        Select Case jo("Kind").Value(Of Int64)
+            Case AesContentKind.Feedback
+                aesContentPack = JsonConvert.DeserializeObject(Of AesFeedbackPackage)(jsonStr, jsonSettings)
+            Case AesContentKind.File
+                aesContentPack = JsonConvert.DeserializeObject(Of AesFilePackage)(jsonStr, jsonSettings)
+            Case AesContentKind.Image
+                aesContentPack = JsonConvert.DeserializeObject(Of AesImagePackage)(jsonStr, jsonSettings)
+            Case AesContentKind.Text
+                aesContentPack = JsonConvert.DeserializeObject(Of AesTextPackage)(jsonStr, jsonSettings)
+            Case Else
+                Throw New Exception("Unknown message received")
+        End Select
+
+        Return aesContentPack
     End Function
 #End Region
 End Class
