@@ -19,7 +19,7 @@ Public Class ChatBox
     Public Event SendFile(fileBytes As Byte(), fileName As String, path As String)
     Public Event SendImage(imageBytes As Byte())
 
-    Private Const SAVEPATH As String = "./Received Files/"
+    Private Const SAVEPATH As String = "./Received_Files/"
 
     Private _socket As SocketBase
 

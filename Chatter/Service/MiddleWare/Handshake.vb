@@ -11,9 +11,9 @@
 ' A ==(complete session key + 3)==> B
 
 
-Public Class Handshake : Implements IMiddleware
-    Public Event DoneHandshake(aes As AesApi)
-    Public Event Send(message As Byte()) Implements IMiddleware.Send
+Public Class Handshake : Implements IHandshake
+    Public Event DoneHandshake(aes As AesApi) Implements IHandshake.DoneHandshake
+    Public Event Send(message As Byte()) Implements IHandshake.Send
 
     Private _handshakeTimes As Integer
     Private _AES As AesApi
@@ -31,7 +31,7 @@ Public Class Handshake : Implements IMiddleware
         _DidILaunchKeyExchange = False
     End Sub
 
-    Public Sub Start()
+    Public Sub Start() Implements IHandshake.Start
         _DidILaunchKeyExchange = True
         ' encrypt session key
         Dim encryptedKey As Byte() = _RSA.EncryptMsg(_AES.GetSessionKey())
@@ -39,7 +39,7 @@ Public Class Handshake : Implements IMiddleware
         SendSessionKey(encryptedKey)
     End Sub
 
-    Private Function ReceiveNewPartialSessionKey_GetCompleteSessionKey(decryptedKey As Byte())
+    Private Function ReceiveNewPartialSessionKey_GetCompleteSessionKey(decryptedKey As Byte()) As Byte()
         Dim bKey = _AES.GetSessionKey()
 
         ' merge the two byte arrays
@@ -58,7 +58,7 @@ Public Class Handshake : Implements IMiddleware
 
     ' received encrypted session key
     ' to decrypt the session key and check it and even save it if necessary
-    Public Sub Receive(encryptedKey As Byte()) Implements IMiddleware.Receive
+    Public Sub Receive(encryptedKey As Byte()) Implements IHandshake.Receive
         If Not _IsPartialKeysMerged Then
             Dim decryptedKey As Byte() = _RSA.DecryptMsg(encryptedKey)
             Dim myPartialSessionKey As Byte() = _AES.GetSessionKey()

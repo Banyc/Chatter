@@ -1,8 +1,9 @@
-﻿Public Class Feedback
+﻿Public Class Feedback : Implements IFeedBack
     Private _msgNotComfirmedList As Dictionary(Of Integer, AesLocalPackage)  ' stores sended messages  ' msgID : msgPackage
 
     ' checks the integrity and authenticity of the incoming message
     ' against replay attack
+    ' the ids init randomly. They then increment each time a new message sent
     Private _myMsgId As UInteger
     Private _othersMsgId As UInteger
 
@@ -16,7 +17,7 @@
     End Sub
 
     ' NOTICE: This method must be called before `SendCipher`
-    Public Sub SetMsgID_StoreMyMsg(localPack As AesLocalPackage)
+    Public Sub SetMsgID_StoreMyMsg(localPack As AesLocalPackage) Implements IFeedBack.StoreMyMsg
         ' updates msg ID
         _myMsgId = UIntIncrement(_myMsgId)
 
@@ -27,13 +28,13 @@
         _msgNotComfirmedList.Add(localPack.AesContentPack.MessageID, localPack)
     End Sub
 
-    Public Function ReceiveFeedback_PopMyMsg(msgID As Integer)
+    Public Function ReceiveFeedback_PopMyMsg(msgID As Integer) As AesLocalPackage Implements IFeedBack.PopMyMsg
         Dim myMsg As AesLocalPackage = _msgNotComfirmedList(msgID)
         _msgNotComfirmedList.Remove(msgID)
         Return myMsg
     End Function
 
-    Public Function ReceiveNewMsg_CheckIntegrity(aesPack As AesContentPackage)
+    Public Function ReceiveNewMsg_CheckIntegrity(aesPack As AesContentPackage) As Boolean Implements IFeedBack.CheckNewMsgIntegrity
         Return DoesMessageIntegrated(aesPack)
     End Function
 
@@ -53,7 +54,7 @@
         Return True
     End Function
 
-    Private Shared Function UIntIncrement(uInt As UInteger)
+    Private Shared Function UIntIncrement(uInt As UInteger) As UInteger
         If uInt = UInteger.MaxValue Then
             Return UInteger.MinValue
         Else

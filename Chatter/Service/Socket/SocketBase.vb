@@ -43,8 +43,8 @@ Public MustInherit Class SocketBase
     Protected _socket As Socket = Nothing
 
     ' Services
-    Private WithEvents _keyExchange As Handshake
-    Private _feedback As Feedback
+    Private WithEvents _keyExchange As IHandshake
+    Private _feedback As IFeedBack
 
     ' ManualResetEvent instances signal completion.
     Private _connectDone As New ManualResetEvent(False)
@@ -113,7 +113,7 @@ Public MustInherit Class SocketBase
     ' NOTE: DOES NOT NEED TO UPDATE `.MessageID` of `aesPack`
     Private Sub SendCipher(aesPack As AesContentPackage, localPack As AesLocalPackage)
         ' NOTICE: This method must be called first
-        _feedback.SetMsgID_StoreMyMsg(localPack)
+        _feedback.StoreMyMsg(localPack)
 
         ' Serialize Object into string
         Dim unencryptedJson As String = AesContentFraming.GetJsonString(aesPack)
@@ -283,7 +283,7 @@ Public MustInherit Class SocketBase
 
             ' checks the integrity and authenticity of the incoming message
             If contentPack.Kind <> AesContentKind.Feedback Then
-                If Not _feedback.ReceiveNewMsg_CheckIntegrity(contentPack) Then
+                If Not _feedback.CheckNewMsgIntegrity(contentPack) Then
                     Exit Sub
                 End If
             End If
@@ -384,7 +384,7 @@ Public MustInherit Class SocketBase
     End Sub
 
     Private Sub ReceiveFeedback(msgID As Integer)
-        RaiseEvent ReceivedFeedBack(_feedback.ReceiveFeedback_PopMyMsg(msgID))
+        RaiseEvent ReceivedFeedBack(_feedback.PopMyMsg(msgID))
     End Sub
 #End Region
 

@@ -89,13 +89,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Model\AesContentPackage.vb" />
+    <Compile Include="Model\AesLocalPackage.vb" />
+    <Compile Include="Model\MessagePackage.vb" />
     <Compile Include="Service\Crypto\AesApi.vb" />
     <Compile Include="Service\MiddleWare\Feedback.vb" />
-    <Compile Include="Service\MiddleWare\IMiddleware.vb" />
+    <Compile Include="Service\MiddleWare\IFeedback.vb" />
+    <Compile Include="Service\MiddleWare\IHandshake.vb" />
     <Compile Include="Service\Protocol\AesContentFraming.vb" />
     <Compile Include="Service\MiddleWare\Handshake.vb" />
     <Compile Include="Service\Socket\SocketBuilder.vb" />
-    <Compile Include="Service\Socket\SocketSettingsFramework.vb" />
+    <Compile Include="Model\SocketSettingsFramework.vb" />
     <Compile Include="View\AddEndpoint.xaml.vb">
       <DependentUpon>AddEndpoint.xaml</DependentUpon>
     </Compile>
@@ -195,5 +199,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>
