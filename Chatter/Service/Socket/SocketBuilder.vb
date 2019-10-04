@@ -1,20 +1,20 @@
 ﻿Public Class SocketBuilder
     Private WithEvents _socketMng As SocketBase
-    Private _config As SocketSettingsFramework
+    Private _settings As SocketSettingsFramework
     Public Event BuildDone(socket As SocketBase)
 
-    Public Sub AsyncBuild(config As SocketSettingsFramework)
+    Public Sub AsyncBuild(settings As SocketSettingsFramework)
         ' Initiation
         If _socketMng IsNot Nothing AndAlso _socketMng.IsShutdown Then
             _socketMng = Nothing
         End If
         If _socketMng Is Nothing Then
-            _config = config
-            Select Case config.Role
+            _settings = settings
+            Select Case settings.Role
                 Case SocketCS.Client
-                    _socketMng = New SocketClient(config.IP, config.Port)
+                    _socketMng = New SocketClient(settings.IP, settings.Port)
                 Case SocketCS.Server
-                    _socketMng = New SocketListener(config.IP, config.Port, config.ExpectedIP)
+                    _socketMng = New SocketListener(settings.IP, settings.Port, settings.ExpectedIP)
                 Case Else
                     _socketMng = Nothing
             End Select
@@ -29,7 +29,7 @@
                     Return
                 End Try
 
-                _socketMng.InitKeyExchange(_config.Seed.GetHashCode(), rsa)
+                _socketMng.InitKeyExchange(_settings.Seed.GetHashCode(), rsa)
 
                 ' Start building socket
                 _socketMng.BuildConnection()
@@ -45,16 +45,16 @@
 
     Private Function InitCryptoFacility() As RsaApi
         Dim rsa As New RsaApi()
-        rsa.SetPrivateKey(IO.File.ReadAllText(_config.PrivateKeyPath))
-        rsa.SetOthersPublicKey(IO.File.ReadAllText(_config.PublicKeyPath))
+        rsa.SetPrivateKey(IO.File.ReadAllText(_settings.PrivateKeyPath))
+        rsa.SetOthersPublicKey(IO.File.ReadAllText(_settings.PublicKeyPath))
         Return rsa
     End Function
 
     Private Sub ConnectedDone() Handles _socketMng.Connected
         Select Case _socketMng.EndPointType
             Case SocketCS.Client
-                ' server actively launch signal to start session key exchange process
             Case SocketCS.Server
+                ' server actively launch signal to start session key exchange process
                 _socketMng.SendStandbyMsg()
         End Select
     End Sub

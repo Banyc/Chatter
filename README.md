@@ -407,12 +407,11 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [x] Send files
 - [x] Send image
 - [ ] Multi socket connections for file transmission
-- [ ] Apply MVC pattern
-- [ ] Save configuration
+- [x] Savable configuration
 - [ ] Multiple Socket connections for different users
 - [ ] ~~Refactor `SocketBase` to accepting middle-wares~~
 - [x] Make the Three-way handshake service independence from `SocketBase`
-- [ ] Make encryption to be a middleware
+- [ ] Design an interface for encryption
 - [x] Make feedback service to be independent
-- [ ] Add model for chat content
-- [ ] decouple SocketBase with ChatBox. Between them adds a controller
+- [ ] Add an data structure containing all chat content in a session
+- [ ] decouple SocketBase with ChatBox. Between them adds a controller (view model for CharBox)

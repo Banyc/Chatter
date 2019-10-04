@@ -1,33 +1,36 @@
 ﻿Imports System.ComponentModel
 
-Public Class AddEndpoint
+Public Class EndpointSettings
 
     Private WithEvents _builder As New SocketBuilder()
     Private WithEvents _socketMng As SocketBase
 
-    Public Sub New()
+    Private WithEvents _viewModel As EndpointSettingsViewModel
 
-        ' 此调用是设计器所必需的。
+    Public Sub New(invokee As MainWindowViewModel, Optional settings As SocketSettingsFramework = Nothing)
+        _viewModel = New EndpointSettingsViewModel(invokee, settings)
+        Me.DataContext = _viewModel
+
         InitializeComponent()
 
-        ' 在 InitializeComponent() 调用之后添加任何初始化。
-
+        cbRole.SelectedIndex = _viewModel.Settings.Role
     End Sub
+
     Private Sub btnBuildSocket_Click(sender As Object, e As RoutedEventArgs)
         If _builder IsNot Nothing Then
             _builder.Abort()
         End If
 
-        Dim config As New SocketSettingsFramework()
-        config.IP = IP.Text
-        config.Port = Port.Text
-        config.ExpectedIP = ExpectedIP.Text
-        config.Role = Role.SelectedIndex
-        config.Seed = Seed.Text
-        config.PrivateKeyPath = PathToPriKey.Text
-        config.PublicKeyPath = PathToPubKey.Text
+        Dim settings As New SocketSettingsFramework()
+        settings.IP = IP.Text
+        settings.Port = Port.Text
+        settings.ExpectedIP = ExpectedIP.Text
+        settings.Role = cbRole.SelectedIndex
+        settings.Seed = Seed.Text
+        settings.PrivateKeyPath = PathToPriKey.Text
+        settings.PublicKeyPath = PathToPubKey.Text
 
-        _builder.AsyncBuild(config)
+        _builder.AsyncBuild(settings)
     End Sub
 
     Private Sub ReadyToChat(socketMng As SocketBase) Handles _builder.BuildDone
@@ -44,7 +47,7 @@ Public Class AddEndpoint
         End If
     End Sub
 
-    Private Sub btnRoloadChatBox_Click(sender As Object, e As RoutedEventArgs)
+    Private Sub btnReloadChatBox_Click(sender As Object, e As RoutedEventArgs)
         If _socketMng IsNot Nothing AndAlso Not _socketMng.IsShutdown Then
             Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
                                   Sub()
@@ -52,6 +55,11 @@ Public Class AddEndpoint
                                       chatBox.Show()
                                   End Sub)
         End If
+    End Sub
+
+    Private Sub btnSaveSettings_Click(sender As Object, e As RoutedEventArgs)
+        _viewModel.Settings.Role = cbRole.SelectedIndex
+        _viewModel.SaveSettings()
     End Sub
 
     Private Sub AddEndpoint_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing

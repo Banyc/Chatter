@@ -2,8 +2,11 @@
 
 Class MainWindow
     Private _IsFlashing As Boolean
+    Private WithEvents _viewModel As MainWindowViewModel
 
     Public Sub New()
+        _viewModel = New MainWindowViewModel()
+        Me.DataContext = _viewModel
         InitializeComponent()
         _IsFlashing = False
     End Sub
@@ -15,37 +18,6 @@ Class MainWindow
             _IsFlashing = False
         End If
     End Sub
-#End Region
-
-#Region "functions"
-    Public Sub UpdateUI_Invoke(endPoint As SocketBase, state As ChatState)
-        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
-                                  Sub()
-                                      Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
-                                  End Sub)
-    End Sub
-
-    Public Sub FlashTaskbar_Invoke()
-        If Not _IsFlashing Then
-            Me.Dispatcher.
-                BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
-                            Sub()
-                                If Not Me.IsActive Then
-                                    FlashWindow.Start(Me)
-                                    _IsFlashing = True
-                                End If
-                            End Sub)
-        End If
-    End Sub
-#End Region
-
-#Region "test"
-    Private Sub btnTest_Click(sender As Object, e As RoutedEventArgs)
-
-        Dim window As New AddEndpoint()
-        window.Show()
-
-    End Sub
 
     Private Sub btnBuildKeyPair_Click(sender As Object, e As RoutedEventArgs)
         Dim exportFileDialog As New Microsoft.Win32.SaveFileDialog()
@@ -54,14 +26,58 @@ Class MainWindow
             filePath = exportFileDialog.FileName
         End If
 
-        Dim rsaProvider As RsaApi
-        rsaProvider = New RsaApi()
+        _viewModel.SaveKeyPairs(filePath)
+    End Sub
 
-        If filePath IsNot Nothing Then
-            IO.File.WriteAllText(filePath & ".priKey", rsaProvider.GetPrivateKey())
-            IO.File.WriteAllText(filePath & ".pubKey", rsaProvider.GetMyPublicKey())
+    Private Sub lvConfig_MouseDoubleClick(sender As Object, e As MouseButtonEventArgs)
+        Call btnSelectConnect_Click(sender, e)
+    End Sub
+
+    Private Sub btnAddConnect_Click(sender As Object, e As RoutedEventArgs)
+        Dim window As New EndpointSettings(_viewModel)
+        window.Show()
+    End Sub
+
+    Private Sub btnSelectConnect_Click(sender As Object, e As RoutedEventArgs)
+        Dim window As New EndpointSettings(_viewModel, lvConfig.SelectedItem)
+        window.Show()
+    End Sub
+
+    Private Sub btnDeleteConnect_Click(sender As Object, e As RoutedEventArgs)
+        If lvConfig.SelectedItem IsNot Nothing Then
+            _viewModel.DeleteSettings(lvConfig.SelectedItem.ID)
         End If
     End Sub
+#End Region
+
+#Region "functions"
+    Public Sub UpdateUI_Invoke(endPoint As SocketBase, state As ChatState)
+        Me.Dispatcher.BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+        Sub()
+            Me.Title = endPoint.EndPointType.ToString() & ", " & state.ToString()
+        End Sub)
+    End Sub
+
+    Public Sub FlashTaskbar_Invoke()
+        If Not _IsFlashing Then
+            Me.Dispatcher.
+                        BeginInvoke(Windows.Threading.DispatcherPriority.Normal,
+            Sub()
+                If Not Me.IsActive Then
+                    FlashWindow.Start(Me)
+                    _IsFlashing = True
+                End If
+            End Sub)
+        End If
+    End Sub
+
+    Private Sub _viewModel_Refreshed() Handles _viewModel.Refreshed
+        lvConfig.ItemsSource = _viewModel.Config.List
+        lvConfig.Items.Refresh()
+    End Sub
+#End Region
+
+#Region "test"
 
 #End Region
 End Class

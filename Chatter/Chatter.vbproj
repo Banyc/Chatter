@@ -91,6 +91,7 @@
     </ApplicationDefinition>
     <Compile Include="Model\AesContentPackage.vb" />
     <Compile Include="Model\AesLocalPackage.vb" />
+    <Compile Include="Model\EndpointConfiguration.vb" />
     <Compile Include="Model\MessagePackage.vb" />
     <Compile Include="Service\Crypto\AesApi.vb" />
     <Compile Include="Service\MiddleWare\Feedback.vb" />
@@ -100,8 +101,10 @@
     <Compile Include="Service\MiddleWare\Handshake.vb" />
     <Compile Include="Service\Socket\SocketBuilder.vb" />
     <Compile Include="Model\SocketSettingsFramework.vb" />
-    <Compile Include="View\AddEndpoint.xaml.vb">
-      <DependentUpon>AddEndpoint.xaml</DependentUpon>
+    <Compile Include="ViewModel\EndpointSettingsViewModel.vb" />
+    <Compile Include="ViewModel\MainWindowViewModel.vb" />
+    <Compile Include="View\EndpointSettings.xaml.vb">
+      <DependentUpon>EndpointSettings.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\ChatBox.xaml.vb">
       <DependentUpon>ChatBox.xaml</DependentUpon>
@@ -112,7 +115,7 @@
     <Compile Include="Service\Socket\SocketBase.vb" />
     <Compile Include="Service\Socket\SocketClient.vb" />
     <Compile Include="Service\Socket\SocketListener.vb" />
-    <Page Include="View\AddEndpoint.xaml">
+    <Page Include="View\EndpointSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

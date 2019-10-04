@@ -9,19 +9,35 @@
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize">
     <Grid>
-        <Grid Name="loginPanel">
+        <Grid Name="loginPanel" Margin="10">
 
-            <StackPanel>
+            <StackPanel Margin="0,0,0,10">
                 <Button Click="btnBuildKeyPair_Click">
                     Make New Key Pair
                 </Button>
-
-                <StackPanel>
-                    <!--TEST PANEL-->
+                
+                <ListView x:Name="lvConfig"
+                          ItemsSource="{Binding Path=Config.List}"
+                          Height="100"
+                          MouseDoubleClick="lvConfig_MouseDoubleClick">
+                </ListView>
+                <Button Click="btnSelectConnect_Click">
+                    SelectConnect
+                </Button>
+                <Button Click="btnDeleteConnect_Click">
+                    DeleteConnect
+                </Button>
+                
+                <Button Click="btnAddConnect_Click">
+                    NewConnect
+                </Button>
+                
+                <!--<StackPanel>
+                    --><!--TEST PANEL--><!--
                     <Button Click="btnTest_Click">
                         test.1
                     </Button>
-                </StackPanel>
+                </StackPanel>-->
             </StackPanel>
         </Grid>
     </Grid>
