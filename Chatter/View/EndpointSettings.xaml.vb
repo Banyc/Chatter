@@ -62,6 +62,42 @@ Public Class EndpointSettings
         _viewModel.SaveSettings()
     End Sub
 
+#Region "File Drop on panel"
+    ' this user drop a file on `Me`
+    Private Sub FileDropZone_Drop(sender As Object, e As DragEventArgs)
+        If e.Data.GetDataPresent(DataFormats.FileDrop) Then
+            Dim files As String() = e.Data.GetData(DataFormats.FileDrop)
+            SetKeysFromFile(files)
+        End If
+    End Sub
+
+    ' extract keys from the files and update them to the container
+    Private Sub SetKeysFromFile(files As String())
+        For Each file In files
+            Dim keyContent As String = IO.File.ReadAllText(file)
+            If keyContent.Contains("RSAParameters") Then
+                If keyContent.Contains("<P>") Then
+                    PathToPriKey.Text = file
+                Else
+                    PathToPubKey.Text = file
+                End If
+            End If
+        Next
+    End Sub
+
+    Private Sub Me_PreviewDragEnter(sender As Object, e As DragEventArgs) Handles Me.PreviewDragEnter
+        FileDropZone.Visibility = Visibility.Visible
+    End Sub
+
+    Private Sub Me_PreviewDragLeave(sender As Object, e As DragEventArgs) Handles Me.PreviewDragLeave
+        FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+
+    Private Sub Me_PreviewDrop(sender As Object, e As DragEventArgs) Handles Me.PreviewDrop
+        FileDropZone.Visibility = Visibility.Hidden
+    End Sub
+#End Region
+
     Private Sub AddEndpoint_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         _builder.Abort()
         If _socketMng IsNot Nothing Then

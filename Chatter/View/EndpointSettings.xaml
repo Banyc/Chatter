@@ -7,61 +7,72 @@
         mc:Ignorable="d"
         Title="EndpointSettings" Height="450" Width="800">
     <Grid>
-        <StackPanel Margin="10">
-            <TextBlock>
-                IP:Port
-            </TextBlock>
-            <TextBox x:Name="IP" Text="{Binding Path=Settings.IP}"/>
-            <TextBox x:Name="Port" Text="{Binding Path=Settings.Port}"/>
+        <Grid>
+            <StackPanel Margin="10">
+                <TextBlock>
+                    IP:Port
+                </TextBlock>
+                <TextBox x:Name="IP" Text="{Binding Path=Settings.IP}"/>
+                <TextBox x:Name="Port" Text="{Binding Path=Settings.Port}"/>
 
-            <TextBlock Margin="0,10,0,0">
-                Expected IP
-            </TextBlock>
-            <TextBox x:Name="ExpectedIP" Text="{Binding Path=Settings.ExpectedIP}"/>
+                <TextBlock Margin="0,10,0,0">
+                    Expected IP
+                </TextBlock>
+                <TextBox x:Name="ExpectedIP" Text="{Binding Path=Settings.ExpectedIP}"/>
 
-            <TextBlock Margin="0,10,0,0">
-                Your role
-            </TextBlock>
-            <ComboBox Name="cbRole">
-                <ComboBoxItem>
-                    Client
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    Server
-                </ComboBoxItem>
-            </ComboBox>
+                <TextBlock Margin="0,10,0,0">
+                    Your role
+                </TextBlock>
+                <ComboBox Name="cbRole">
+                    <ComboBoxItem>
+                        Client
+                    </ComboBoxItem>
+                    <ComboBoxItem>
+                        Server
+                    </ComboBoxItem>
+                </ComboBox>
             
-            <TextBlock Margin="0,10,0,0">
-                Path to Your Private Key
-            </TextBlock>
-            <TextBox x:Name="PathToPriKey" Text="{Binding Path=Settings.PrivateKeyPath}"/>
+                <TextBlock Margin="0,10,0,0">
+                    Path to Your Private Key
+                </TextBlock>
+                <TextBox x:Name="PathToPriKey" Text="{Binding Path=Settings.PrivateKeyPath}"/>
 
-            <TextBlock Margin="0,10,0,0">
-                Path to Other's Public Key
-            </TextBlock>
-            <TextBox x:Name="PathToPubKey" Text="{Binding Path=Settings.PrivateKeyPath}"/>
+                <TextBlock Margin="0,10,0,0">
+                    Path to Other's Public Key
+                </TextBlock>
+                <TextBox x:Name="PathToPubKey" Text="{Binding Path=Settings.PrivateKeyPath}"/>
             
-            <TextBlock Margin="0,10,0,0">
-                Seed
-            </TextBlock>
-            <TextBox x:Name="Seed" Text="{Binding Path=Settings.Seed}"/>
+                <TextBlock Margin="0,10,0,0">
+                    Seed
+                </TextBlock>
+                <TextBox x:Name="Seed" Text="{Binding Path=Settings.Seed}"/>
 
-            <TextBlock Margin="0,10,0,0">
-                Name
-            </TextBlock>
-            <TextBox x:Name="Name" Text="{Binding Path=Settings.Name}" />
+                <TextBlock Margin="0,10,0,0">
+                    Name
+                </TextBlock>
+                <TextBox x:Name="Name" Text="{Binding Path=Settings.Name}" />
 
-            <StackPanel Margin="0,10,0,0">
-                <Button Click="btnBuildSocket_Click">
-                    Ready to connect
-                </Button>
-                <Button Click="btnReloadChatBox_Click">
-                    Reload Chat Box
-                </Button>
-                <Button Click="btnSaveSettings_Click">
-                    Save settings
-                </Button>
+                <StackPanel Margin="0,10,0,0">
+                    <Button Click="btnBuildSocket_Click">
+                        Ready to connect
+                    </Button>
+                    <Button Click="btnReloadChatBox_Click">
+                        Reload Chat Box
+                    </Button>
+                    <Button Click="btnSaveSettings_Click">
+                        Save settings
+                    </Button>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+        </Grid>
+        <Grid>
+            <Rectangle x:Name="FileDropZone" 
+                       Visibility="Hidden" 
+                       AllowDrop="True"
+                       Drop="FileDropZone_Drop"
+                       Fill="White"
+                       Opacity="0.8">
+            </Rectangle>
+        </Grid>
     </Grid>
 </Window>
