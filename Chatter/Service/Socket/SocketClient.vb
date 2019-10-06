@@ -47,7 +47,7 @@ Public Class SocketClient
 
         ' Create a TCP/IP socket.  
         client = New Socket(ipAddress.AddressFamily,
-        SocketType.Stream, ProtocolType.Tcp)
+            SocketType.Stream, ProtocolType.Tcp)
 
         While Not client.Connected
             Try

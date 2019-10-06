@@ -1,4 +1,6 @@
-﻿Imports System.ComponentModel
+﻿' This is the definition of a setting panel
+' It is used to launch a new connection or save settings for future use
+Imports System.ComponentModel
 
 Public Class EndpointSettings
 
@@ -13,7 +15,7 @@ Public Class EndpointSettings
 
         InitializeComponent()
 
-        cbRole.SelectedIndex = _viewModel.Settings.Role
+        UpdateView()
     End Sub
 
     Private Sub btnBuildSocket_Click(sender As Object, e As RoutedEventArgs)
@@ -21,16 +23,8 @@ Public Class EndpointSettings
             _builder.Abort()
         End If
 
-        Dim settings As New SocketSettingsFramework()
-        settings.IP = IP.Text
-        settings.Port = Port.Text
-        settings.ExpectedIP = ExpectedIP.Text
-        settings.Role = cbRole.SelectedIndex
-        settings.Seed = Seed.Text
-        settings.PrivateKeyPath = PathToPriKey.Text
-        settings.PublicKeyPath = PathToPubKey.Text
-
-        _builder.AsyncBuild(settings)
+        UpdateViewModel()
+        _builder.AsyncBuild(_viewModel.Settings)
     End Sub
 
     Private Sub ReadyToChat(socketMng As SocketBase) Handles _builder.BuildDone
@@ -58,8 +52,13 @@ Public Class EndpointSettings
     End Sub
 
     Private Sub btnSaveSettings_Click(sender As Object, e As RoutedEventArgs)
-        _viewModel.Settings.Role = cbRole.SelectedIndex
+        UpdateViewModel()
         _viewModel.SaveSettings()
+    End Sub
+
+    Private Sub btnSaveAs_Click(sender As Object, e As RoutedEventArgs)
+        UpdateViewModel()
+        _viewModel.SaveAs()
     End Sub
 
 #Region "File Drop on panel"
@@ -99,13 +98,26 @@ Public Class EndpointSettings
 #End Region
 
     Private Sub AddEndpoint_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        _builder.Abort()
-        If _socketMng IsNot Nothing Then
-            _socketMng.Shutdown()
-        End If
+        '_builder.Abort()
+        'If _socketMng IsNot Nothing Then
+        '    _socketMng.Shutdown()
+        'End If
     End Sub
 
     Private Sub _socketMng_Connected() Handles _socketMng.Connected
         Me.Title = "Connected"
+    End Sub
+
+    Private Sub UpdateViewModel()
+        _viewModel.Settings.IP = IP.Text
+        _viewModel.Settings.Port = Port.Text
+        _viewModel.Settings.PrivateKeyPath = PathToPriKey.Text
+        _viewModel.Settings.PublicKeyPath = PathToPubKey.Text
+        _viewModel.Settings.Seed = Seed.Text
+        _viewModel.Settings.Name = Name.Text
+        _viewModel.Settings.Role = cbRole.SelectedIndex
+    End Sub
+    Private Sub UpdateView()
+        cbRole.SelectedIndex = _viewModel.Settings.Role
     End Sub
 End Class

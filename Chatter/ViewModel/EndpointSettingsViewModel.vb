@@ -5,7 +5,7 @@
     Public Sub New(invokee As MainWindowViewModel, Optional settings As SocketSettingsFramework = Nothing)
         _invokee = invokee
         If settings Is Nothing Then
-            Me.Settings = New SocketSettingsFramework
+            Me.Settings = New SocketSettingsFramework()
             Me.Settings.IP = "127.0.0.1"
             Me.Settings.Port = "11000"
             Me.Settings.PrivateKeyPath = "./Path/To/priKey"
@@ -13,7 +13,7 @@
             Me.Settings.Seed = "Please type in random characters"
             Me.Settings.Name = "Undefined"
         Else
-            Me.Settings = settings
+            Me.Settings = settings.Clone()
         End If
     End Sub
 
@@ -22,5 +22,10 @@
         config.Add(Me.Settings)
         config.Save()
         _invokee.Reload()
+    End Sub
+
+    Public Sub SaveAs()
+        Me.Settings.ID = -1
+        Me.SaveSettings()
     End Sub
 End Class

@@ -56,11 +56,14 @@
                     <Button Click="btnBuildSocket_Click">
                         Ready to connect
                     </Button>
-                    <Button Click="btnReloadChatBox_Click">
+                    <!--<Button Click="btnReloadChatBox_Click">
                         Reload Chat Box
-                    </Button>
+                    </Button>-->
                     <Button Click="btnSaveSettings_Click">
                         Save settings
+                    </Button>
+                    <Button Click="btnSaveAs_Click">
+                        Save settings as ...
                     </Button>
                 </StackPanel>
             </StackPanel>
