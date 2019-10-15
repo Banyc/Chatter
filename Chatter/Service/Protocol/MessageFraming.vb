@@ -153,6 +153,13 @@ Public Class MessageFraming
         Return GetMsgFrame(msgPack)
     End Function
 
+    Public Shared Function SendRsaException() As Byte()
+        Dim msgPack = New PlaintextSignalMessagePackage()
+        msgPack.Content = MessagePlaintextSignal.RsaException
+
+        Return GetMsgFrame(msgPack)
+    End Function
+
     ' NOTE: TRIM THE INPUT BYTES BEFORE CALLING
     Public Shared Function SendEncryptedSessionKey(encryptedSessionKey As Byte()) As Byte()
         Dim msgPack = New EncryptedSessionKeyMessagePackage()

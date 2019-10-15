@@ -23,27 +23,23 @@ Public Class SocketListener
     End Sub
 
     Public Overrides Sub BuildConnection()
-        Dim buildThread As Task = New Task(
-            Sub()
-                Try
-                    ' Connect to a remote device. 
-                    MyBase._socket = Build(GetIp(), GetPort())
+        Try
+            ' Connect to a remote device. 
+            MyBase._socket = Build(GetIp(), GetPort())
 
-                Catch ex As SocketException
-                    MessageBox.Show(ex.Message.ToString(), SocketCS.Server.ToString())
-                    MyBase.Shutdown()
-                End Try
+        Catch ex As SocketException
+            MessageBox.Show(ex.Message, SocketCS.Server.ToString())
+            MyBase.Shutdown()
+        End Try
 
-                ' keep listenning until it established a legal connection
-                While Not IsConnectorLegal(MyBase._socket, _expectedIp)
-                    MyBase._socket.Dispose()
+        ' keep listenning until it established a legal connection
+        While Not IsConnectorLegal(MyBase._socket, _expectedIp)
+            MyBase._socket.Dispose()
 
-                    MyBase._socket = Build(GetIp(), GetPort())
-                End While
+            MyBase._socket = Build(GetIp(), GetPort())
+        End While
 
-                MyBase.ConnectDone()  ' enable the listenLoop
-            End Sub)
-        buildThread.Start()
+        MyBase.ConnectDone()  ' enable the listenLoop
     End Sub
 
     Private Function IsConnectorLegal(server As Socket, expectedIp As IPAddress) As Boolean
@@ -97,7 +93,9 @@ Public Class SocketListener
         Console.WriteLine("Waiting for a connection...")
 
         ' Program is suspended while waiting for an incoming connection.  
-        Return server.Accept()
+        Dim socket As Socket = server.Accept()
+        Console.WriteLine("[Server] Socket connected")
+        Return socket
     End Function
 
 End Class 'SocketListener  

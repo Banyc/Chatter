@@ -24,7 +24,8 @@ Public Class EndpointSettings
         End If
 
         UpdateViewModel()
-        _builder.AsyncBuild(_viewModel.Settings)
+
+        Dim task As Task(Of SocketBase) = _builder.GloballyBuild(_viewModel.Settings)
     End Sub
 
     Private Sub ReadyToChat(socketMng As SocketBase) Handles _builder.BuildDone

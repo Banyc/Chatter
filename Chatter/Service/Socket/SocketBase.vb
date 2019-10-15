@@ -20,6 +20,7 @@ Public MustInherit Class SocketBase
     Public Event Disconnected()
     Public Event ReceivedFile(fileBytes As Byte(), fileName As String)
     Public Event ReceivedImage(imageBytes As Byte())
+    Public Event CatchedError(ex As Exception)
 #End Region
 
 #Region "Variables Declaration"
@@ -39,6 +40,8 @@ Public MustInherit Class SocketBase
             _IsShutdown = value
         End Set
     End Property
+
+    Public ReadOnly Property IsEncrypted As Boolean = False
 
     Protected _socket As Socket = Nothing
 
@@ -171,7 +174,13 @@ Public MustInherit Class SocketBase
                     Sub()
                         _connectDone.WaitOne()
                         ' Send the data through the socket.
-                        Dim bytesSent As Integer = _socket.Send(msgAttached)
+                        Try
+                            Dim bytesSent As Integer = _socket.Send(msgAttached)
+                        Catch ex As ObjectDisposedException
+                            MessageBox.Show("Connection closed while still with something not sent", "Error")
+                        Catch ex As SocketException
+                            MessageBox.Show("Connection closed while still with something not sent", "Error")
+                        End Try
                     End Sub)
                 thread.Start()
             End If
@@ -346,6 +355,8 @@ Public MustInherit Class SocketBase
                 _receivedStandbyMsg.Set()
                 RaiseStandbyEventThread()
                 _IsOppositeStandby = True
+            Case MessagePlaintextSignal.RsaException
+                _keyExchange.ReceiveRsaException()
         End Select
     End Sub
 
@@ -358,6 +369,7 @@ Public MustInherit Class SocketBase
     ' Notice: Call this after key pair (`rsa`) is set
     Public Sub InitKeyExchange(seed As Integer, rsa As RsaApi)
         _keyExchange = New Handshake(seed, rsa)
+        AddHandler _keyExchange.Failed, AddressOf CatchedErrorFromEvent  ' add all error to an error handler
     End Sub
 
     Public Sub LaunchKeyExchange()
@@ -366,6 +378,7 @@ Public MustInherit Class SocketBase
 
     Private Sub DoneKeyExchange(aes As AesApi) Handles _keyExchange.DoneHandshake
         _AES = aes
+        Me._IsEncrypted = True
         _encryptDone.Set()
         _keyExchange = Nothing
         RaiseEvent Encrypted()
@@ -427,6 +440,11 @@ Public MustInherit Class SocketBase
             MessageBox.Show("Shutdowned", Me.EndPointType.ToString())
 #End If
         End If
+    End Sub
+
+    Private Sub CatchedErrorFromEvent(ex As Exception)
+        Me.Shutdown()
+        RaiseEvent CatchedError(ex)
     End Sub
 #End Region
 

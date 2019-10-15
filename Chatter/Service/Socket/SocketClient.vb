@@ -12,20 +12,16 @@ Public Class SocketClient
     End Sub
 
     Public Overrides Sub BuildConnection()
-        Dim connectThread = New Task(
-            Sub()
-                Try
-                    ' Connect to a remote device. 
-                    MyBase._socket = Connect(GetIp(), GetPort())
+        Try
+            ' Connect to a remote device. 
+            MyBase._socket = Connect(GetIp(), GetPort())
 
-                Catch ex As SocketException
-                    MessageBox.Show(ex.Message.ToString(), EndPointType.ToString())
-                    MyBase.Shutdown()
-                End Try
+        Catch ex As SocketException
+            MessageBox.Show(ex.Message.ToString(), EndPointType.ToString())
+            MyBase.Shutdown()
+        End Try
 
-                ConnectDone()  ' enable the listenLoop
-            End Sub)
-        connectThread.Start()
+        ConnectDone()  ' enable the listenLoop
     End Sub
 
     Private Function Connect(ipStr As String, port As Integer) As Socket
@@ -58,7 +54,7 @@ Public Class SocketClient
             End Try
         End While
 
-        Console.WriteLine("Socket connected to {0}",
+        Console.WriteLine("[Client] Socket connected to {0}",
                           client.RemoteEndPoint.ToString())
         Return client
     End Function

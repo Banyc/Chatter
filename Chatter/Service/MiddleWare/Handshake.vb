@@ -11,10 +11,12 @@
 ' A ==(complete session key + 3)==> B
 
 
+Imports Chatter
+
 Public Class Handshake : Implements IHandshake
     Public Event DoneHandshake(aes As AesApi) Implements IHandshake.DoneHandshake
     Public Event Send(message As Byte()) Implements IHandshake.Send
-
+    Public Event Failed(ex As Exception) Implements IHandshake.Failed
     Private _handshakeTimes As Integer
     Private _AES As AesApi
     Private _RSA As RsaApi
@@ -59,48 +61,61 @@ Public Class Handshake : Implements IHandshake
     ' received encrypted session key
     ' to decrypt the session key and check it and even save it if necessary
     Public Sub Receive(encryptedKey As Byte()) Implements IHandshake.Receive
-        If Not _IsPartialKeysMerged Then
-            Dim decryptedKey As Byte() = _RSA.DecryptMsg(encryptedKey)
-            Dim myPartialSessionKey As Byte() = _AES.GetSessionKey()
+        Try
+            If Not _IsPartialKeysMerged Then
+                Dim decryptedKey As Byte()
+                decryptedKey = _RSA.DecryptMsg(encryptedKey)
+                Dim myPartialSessionKey As Byte() = _AES.GetSessionKey()
 
-            ' set the complete session key
-            _AES.SetSessionKey(ReceiveNewPartialSessionKey_GetCompleteSessionKey(decryptedKey))
+                ' set the complete session key
+                _AES.SetSessionKey(ReceiveNewPartialSessionKey_GetCompleteSessionKey(decryptedKey))
 
-            If Not _DidILaunchKeyExchange Then
-                ' encrypt session key
-                Dim myPartialSessionKey_Encrypted As Byte() = _RSA.EncryptMsg(myPartialSessionKey)
-                ' send encrypted session key
-                SendSessionKey(myPartialSessionKey_Encrypted)
-            Else
-                SendTunnalRequest()
-            End If
-
-        Else ' check if the opposite is an authentic user  ' the second stage begins
-            _handshakeTimes += 1
-
-            Dim decryptedKey As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedKey), _handshakeTimes)
-
-            If _DidSendSessionKey Then  ' which means you have already have the session key
-                If decryptedKey.SequenceEqual(_AES.GetSessionKey()) Then
-                    ' do nothing
+                If Not _DidILaunchKeyExchange Then
+                    ' encrypt session key
+                    Dim myPartialSessionKey_Encrypted As Byte() = _RSA.EncryptMsg(myPartialSessionKey)
+                    ' send encrypted session key
+                    SendSessionKey(myPartialSessionKey_Encrypted)
                 Else
-                    _handshakeTimes -= 1
-                    MessageBox.Show("Session key not matched!")
-                    Throw New Exception("Session key not matched!")
-                    Exit Sub
+                    SendTunnalRequest()
                 End If
-            Else
-                _AES.SetSessionKey(decryptedKey)
-                MessageBox.Show("Your seed for seesion key is not in effect", "Warning")
-                ' send later
-            End If
 
-            If _handshakeTimes >= 3 Then
-                RaiseEvent DoneHandshake(_AES)
-            Else
-                SendTunnalRequest()
+            Else ' check if the opposite is an authentic user  ' the second stage begins
+                _handshakeTimes += 1
+
+                Dim decryptedKey As Byte() = DecrementBytes(_RSA.DecryptMsg(encryptedKey), _handshakeTimes)
+
+                If _DidSendSessionKey Then  ' which means you have already have the session key
+                    If decryptedKey.SequenceEqual(_AES.GetSessionKey()) Then
+                        ' do nothing
+                    Else
+                        _handshakeTimes -= 1
+                        MessageBox.Show("Session key not matched!")
+                        Throw New Exception("Session key not matched!")
+                        Exit Sub
+                    End If
+                Else
+                    _AES.SetSessionKey(decryptedKey)
+                    MessageBox.Show("Your seed for seesion key is not in effect", "Warning")
+                    ' send later
+                End If
+
+                If _handshakeTimes >= 3 Then
+                    RaiseEvent DoneHandshake(_AES)
+                Else
+                    SendTunnalRequest()
+                End If
             End If
-        End If
+        Catch ex As RsaDecryptionException
+            Me.SendRsaException()
+            RaiseEvent Failed(ex)
+        Catch ex As Exception
+            Me.SendRsaException()  ' TODO: to send an default exception instead
+            RaiseEvent Failed(ex)
+        End Try
+    End Sub
+
+    Public Sub ReceiveRsaException() Implements IHandshake.ReceiveRsaException
+        RaiseEvent Failed(New RsaDecryptionException())
     End Sub
 
     ' check if the opposite is an authentic user
@@ -127,6 +142,11 @@ Public Class Handshake : Implements IHandshake
     Private Sub SendSessionKey(encryptedSessionKey As Byte())
         _DidSendSessionKey = True
         Dim msgBytes As Byte() = MessageFraming.SendEncryptedSessionKey(encryptedSessionKey)
+        RaiseEvent Send(msgBytes)
+    End Sub
+
+    Private Sub SendRsaException()
+        Dim msgBytes As Byte() = MessageFraming.SendRsaException()
         RaiseEvent Send(msgBytes)
     End Sub
 
@@ -167,5 +187,4 @@ Public Class Handshake : Implements IHandshake
         Next i
         Return bVal
     End Function
-
 End Class

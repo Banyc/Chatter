@@ -18,6 +18,7 @@ End Enum
 
 Public Enum MessagePlaintextSignal
     Standby
+    RsaException
 End Enum
 
 #Region "Serial Classes"
