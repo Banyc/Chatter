@@ -6,7 +6,7 @@ Imports System.Security.Cryptography
 Public Class RsaDecryptionException
     Inherits System.Exception
     Public Sub New()
-        MyBase.New()
+        MyBase.New("Using wrong RSA key pair? Try to check the correctness of those key pair you set.")
     End Sub
     Public Sub New(ByVal message As String)
         MyBase.New(message)
@@ -67,8 +67,8 @@ Public Class RsaApi
     Public Function DecryptMsg(data As Byte()) As Byte()
         Try
             Return _pri.Decrypt(data, False)
-        Catch ex As Exception
-            Throw New RsaDecryptionException("Using wrong RSA key pair? Try to check the correctness of those key pair you set.")
+        Catch ex As CryptographicException
+            Throw New RsaDecryptionException()
         End Try
     End Function
 #End Region

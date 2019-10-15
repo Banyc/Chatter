@@ -2,7 +2,7 @@
     Text
     Image  ' Abandoned. Merged into `File`
     File
-    Feedback
+    Feedback  ' ACK
 End Enum
 
 

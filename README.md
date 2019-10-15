@@ -403,7 +403,7 @@ Procedure (Suppose the previous message ID from *A* denotes `aID'`)
 - [ ] Scan peers on the same Intranet
 - [ ] write documentations for each class
 - [x] Ensure integrity of each message in Application Layer assuming no package loss
-- [ ] Deal with package loss
+- [ ] ~~Deal with package loss~~ (TCP has done that)
 - [x] Send files
 - [x] Send image
 - [ ] Multi socket connections for file transmission
